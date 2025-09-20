@@ -96,15 +96,15 @@ class PermissionsDto implements JsonSerializable
     }
 
     /**
-     * @param mixed[] $permissionsData
+     * @param null|array $permissionsData
      *
      * @return PermissionsDto
      */
-    public static function fromArray(array $permissionsData): self
+    public static function fromArray(?array $permissionsData): self
     {
         return new self(
-            $permissionsData['global'],
-            $permissionsData['station']
+            $permissionsData['global'] ?? [],
+            $permissionsData['station'] ?? []
         );
     }
 }
