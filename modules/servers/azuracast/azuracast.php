@@ -133,7 +133,7 @@ function azuracast_CreateAccount(array $params)
         $storage = $azuracast->admin()->storage()->update($service);
 
         // Create a role for this station
-        $role = $azuracast->admin()->roles()->create("Station {$station->getId()} Role", [], [$station->getId() => ["manage station automation", "nanage station profile", "manage station broadcasting", "manage station media", "manage station mounts", "manage station podcasts", "manage station remotes", "manage station streamers", "manage station web hooks", "view station management", "view station reports"]]);
+        $role = $azuracast->admin()->roles()->create("Station {$station->getId()} Role", [], [$station->getId() => ["manage station automation", "manage station profile", "manage station broadcasting", "manage station media", "delete station media", "manage station mounts", "manage station podcasts", "manage station remotes", "manage station streamers", "manage station web hooks", "view station management", "view station reports", "view station logs"]]);
         $service->setRoleId($role->getId());
 
         // Look for other provisioned services at the same server
