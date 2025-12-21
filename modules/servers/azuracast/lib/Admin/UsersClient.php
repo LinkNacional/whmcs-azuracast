@@ -86,7 +86,7 @@ class UsersClient extends AbstractClient
         string $newPassword,
         string $name,
         string $locale,
-        array $roles,
+        array $roles
     ): Dto\UserDto {
         $userDto = new Dto\UserDto(
             0,
@@ -170,5 +170,87 @@ class UsersClient extends AbstractClient
             'DELETE',
             sprintf('admin/user/%s', $userId)
         );
+    }
+
+    public function getAdministratorUserIdFromToken() : int
+    {
+        $administratorUser = $this->request('GET', 'frontend/account/me');
+        if (!isset($administratorUser['id'])) {
+            throw new ClientRequestException('Administrator user ID not found in response');
+        }
+
+        return $administratorUser['id'];
+    }
+
+
+    /**
+     * @param int $userId
+     *
+     * @return string
+     *
+     * @throws Exception\AccessDeniedException
+     * @throws Exception\ClientRequestException
+     */
+    public function getLoginLink(int $userId): string
+    {
+        $loginLinkRequestData = [
+            "user" => $userId,
+            "type" => "login",
+            "comment" => "WHMCS SSO Login",
+            "expires_minutes" => 10
+        ];
+
+        $loginLinkResponseData = $this->request(
+            'POST',
+            sprintf('admin/login_tokens'),
+            ['json' => $loginLinkRequestData]
+        );
+
+        /* RESPONSE FORMAT:
+
+            "success": true,
+            "message": "Record created successfully.",
+            "formatted_message": "Record created successfully.",
+            "record": {
+                "user": {
+                "email": "",
+                "auth_password": "",
+                "name": "Customer",
+                "locale": "en_US",
+                "show_24_hour_time": null,
+                "two_factor_secret": null,
+                "created_at": 1766327680,
+                "updated_at": 1766327680,
+                "roles": [
+                    {
+                    "name": "Station 3 Role",
+                    "id": 2
+                    }
+                ],
+                "api_keys": [],
+                "passkeys": [],
+                "login_tokens": [
+                    "xxxxxx"
+                ],
+                "id": 2
+                },
+                "type": "login",
+                "comment": "SSO Login",
+                "created_at": 1766328498,
+                "expires_at": 1766328798,
+                "id": "xxxxxx"
+            },
+            "links": {
+                "self": "https://..../api/admin/login_token/7c56de5c0457954f",
+                "login": "https://..../login-token/7c56de5c0457954f:653635cdd176a9a67bb67ec4443252f2"
+            }
+            }
+        */
+
+        if (!isset($loginLinkResponseData['links']['login'])) {
+            throw new ClientRequestException('Login link not found in response');
+        }
+
+        return $loginLinkResponseData['links']['login'];
     }
 }

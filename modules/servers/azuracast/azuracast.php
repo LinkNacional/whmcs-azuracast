@@ -36,11 +36,14 @@ const AZURACAST_UPDATE_USER_PASSWORD_ON_ANOTHER_STATION_CREATION = false;
 function azuracast_MetaData()
 {
     return array(
-        'DisplayName' => 'AzuraCast Module',
+        'DisplayName' => 'AzuraCast',
         'APIVersion' => '1.1',
         'RequiresServer' => true,
         'DefaultNonSSLPort' => '80',
         'DefaultSSLPort' => '443',
+        'ServiceSingleSignOnLabel' => 'Login as User',
+        'AdminSingleSignOnLabel' => 'Login as Admin',
+
     );
 }
 
@@ -450,15 +453,7 @@ function azuracast_TestConnection(array $params)
 }
 
 /**
- * ----------------------------------------------------------------------------------
- * THIS DOESN'T WORK YET AS AZURACAST DOESN'T HAVE AN API ENDPOINT FOR USER LOGIN
- * ----------------------------------------------------------------------------------
- *
  * Perform single sign-on for a given instance of a product/service.
- *
- * Called when single sign-on is requested for an instance of a product/service.
- *
- * When successful, returns an URL to which the user should be redirected.
  *
  * @param array $params common module parameters
  *
@@ -466,17 +461,18 @@ function azuracast_TestConnection(array $params)
  *@see https://developers.whmcs.com/provisioning-modules/module-parameters/
  *
  */
-/**
+
 function azuracast_ServiceSingleSignOn(array $params)
 {
     $return = array(
         'success' => false,
     );
+
     try {
 
         $service = new Service($params);
         $azuracast = azuracast_ApiClient($params);
-        $loginUrl = $azuracast->admin()->stations()->login($service->getStationId());
+        $loginUrl = $azuracast->admin()->users()->getLoginLink($service->getUserId());
 
         $return = array(
             'success' => true,
@@ -493,14 +489,77 @@ function azuracast_ServiceSingleSignOn(array $params)
             $e->getTraceAsString()
         );
 
-        $return['errorMsg'] = $e->getMessage();
-        $response = $e->getMessage();
-        $formattedResponse = $e->getTraceAsString();
+        return $e->getMessage();
     }
 
     return $return;
 }
-*/
+
+/**
+ * Perform single sign-on for a server.
+ *
+ * @param array $params common module parameters
+ *
+ * @see https://developers.whmcs.com/provisioning-modules/module-parameters/
+ *
+ * @return array
+ */
+function provisioningmodule_AdminSingleSignOn(array $params)
+{
+    $return = array(
+        'success' => false,
+    );
+
+    try {
+
+        $service = new Service($params);
+        $azuracast = azuracast_ApiClient($params);
+        $administratorUserId = $azuracast->admin()->users()->getAdministratorUserIdFromToken();
+        $loginUrl = $azuracast->admin()->users()->getLoginLink($administratorUserId);
+
+        $return = array(
+            'success' => true,
+            'redirectTo' => $loginUrl,
+        );
+
+    } catch (Exception $e) {
+        // Record the error in WHMCS's module log.
+        logModuleCall(
+            'azuracast',
+            __FUNCTION__,
+            $params,
+            $e->getMessage(),
+            $e->getTraceAsString()
+        );
+
+        return $e->getMessage();
+    }
+
+    return $return;
+}
+
+function azuracast_ClientArea($params)
+{
+    $service = new Service($params);
+    $productConfigOptions = [
+        'Maximum Bitrate' => $service->getMaxBitrate() . ' Kbps',
+        'Maximum Mounts' => $service->getMaxMounts() . ' Mounts',
+        'Maximum HLS Streams' => $service->getMaxHlsStreams() . ' HLS Streams',
+        'Media Storage Limit' => $service->getMediaStorage() . ' MB',
+        'Recordings Storage Limit' => $service->getRecordingsStorage() . ' MB',
+        'Podcasts Storage Limit' => $service->getPodcastsStorage() . ' MB',
+        'Maximum Listeners' => $service->getMaxListeners() . ' Listeners',
+        'Server Type' => $service->getServerType(),
+    ];
+    
+    return array(
+        'templatefile' => 'clientarea',
+        'vars' => array(
+            'params' => $params,
+            'productConfigOptions' => $productConfigOptions,
+        ),
+    );
+}
 
 function azuracast_ApiClient($params) : Client
 {
