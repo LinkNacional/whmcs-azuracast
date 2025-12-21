@@ -18,7 +18,7 @@ The most complete/comprehensive AzuraCast provisioning module for WHMCS.
 - Packages Upgrade/Downgrade
 - Password Change
 - Detection of multiple (same module, same server) products for the same client and provisioning within the same AzuraCast user.
-- Client Sign On functionality (Not available until the functionality will be added to AzuraCast itself.)
+- Client Sign-in (SSO) functionality 
 
 ## Installation
 
