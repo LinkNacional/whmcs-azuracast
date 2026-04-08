@@ -578,14 +578,168 @@ function azuracast_ClientArea($params)
         'Maximum Listeners' => $service->getMaxListeners() . ' Listeners',
         'Server Type' => $service->getServerType(),
     ];
+
+    $dashboard = azuracast_GetClientAreaDashboardData($params, $service);
     
     return array(
         'templatefile' => 'clientarea',
         'vars' => array(
             'params' => $params,
             'productConfigOptions' => $productConfigOptions,
+            'dashboard' => $dashboard,
         ),
     );
+}
+
+function azuracast_GetClientAreaDashboardData(array $params, Service $service): array
+{
+    $stationId = $service->getStationId();
+    $hasStation = null !== $stationId;
+    $singleSignOnUrl = $hasStation
+        ? sprintf('/clientarea.php?action=productdetails&id=%d&dosinglesignon=1', (int)$params['id'])
+        : null;
+
+    $dashboard = [
+        'available' => false,
+        'warning' => $hasStation ? null : 'This service has not been provisioned yet.',
+        'stationName' => $service->getStationName(),
+        'shortName' => $service->getStationShortName(),
+        'description' => '',
+        'statusText' => 'Unavailable',
+        'statusVariant' => 'muted',
+        'artworkUrl' => null,
+        'listeners' => 0,
+        'currentTrackTitle' => 'No track is currently playing.',
+        'currentTrackArtist' => 'Live data is not available yet.',
+        'liveStreamerName' => null,
+        'hasLiveBroadcast' => false,
+        'upcomingShow' => null,
+        'playerUrl' => null,
+        'streamUrl' => null,
+        'publicPageUrl' => null,
+        'scheduleUrl' => null,
+        'shortcuts' => [],
+        'serviceCards' => [],
+        'quotaCards' => [],
+    ];
+
+    if (!$hasStation) {
+        return $dashboard;
+    }
+
+    $client = azuracast_ApiClient($params);
+
+    $stationDashboard = azuracast_TryClientAreaRequest($client, 'GET', sprintf('station/%d/dashboard', $stationId));
+    $stationProfile = azuracast_TryClientAreaRequest($client, 'GET', sprintf('station/%d/profile', $stationId));
+    $nowPlaying = azuracast_TryClientAreaRequest($client, 'GET', sprintf('station/%d/nowplaying', $stationId));
+    $mediaQuota = azuracast_TryClientAreaRequest($client, 'GET', sprintf('station/%d/quota/station_media', $stationId));
+    $recordingsQuota = azuracast_TryClientAreaRequest($client, 'GET', sprintf('station/%d/quota/station_recordings', $stationId));
+    $podcastsQuota = azuracast_TryClientAreaRequest($client, 'GET', sprintf('station/%d/quota/station_podcasts', $stationId));
+
+    $dashboard['available'] = null !== $stationDashboard || null !== $stationProfile || null !== $nowPlaying;
+
+    if (!$dashboard['available']) {
+        $dashboard['warning'] = 'Live station data is temporarily unavailable. Package information is still shown below.';
+    }
+
+    $dashboard['stationName'] = azuracast_ArrayGet($stationDashboard, ['name'], azuracast_ArrayGet($stationProfile, ['station', 'name'], $dashboard['stationName']));
+    $dashboard['shortName'] = azuracast_ArrayGet($stationDashboard, ['shortName'], azuracast_ArrayGet($nowPlaying, ['station', 'shortcode'], $dashboard['shortName']));
+    $dashboard['description'] = azuracast_ArrayGet($stationDashboard, ['description'], azuracast_ArrayGet($nowPlaying, ['station', 'description'], ''));
+    $dashboard['artworkUrl'] = azuracast_ArrayGet($nowPlaying, ['now_playing', 'song', 'art'], azuracast_ArrayGet($nowPlaying, ['station', 'art'], null));
+    $dashboard['listeners'] = (int)azuracast_ArrayGet($nowPlaying, ['listeners', 'total'], 0);
+    $dashboard['currentTrackTitle'] = (string)azuracast_ArrayGet($nowPlaying, ['now_playing', 'song', 'title'], $dashboard['currentTrackTitle']);
+    $dashboard['currentTrackArtist'] = (string)azuracast_ArrayGet($nowPlaying, ['now_playing', 'song', 'artist'], $dashboard['currentTrackArtist']);
+    $dashboard['liveStreamerName'] = azuracast_ArrayGet($nowPlaying, ['live', 'streamer_name']);
+    $dashboard['hasLiveBroadcast'] = (bool)azuracast_ArrayGet($nowPlaying, ['live', 'is_live'], false);
+
+    $frontendRunning = (bool)azuracast_ArrayGet($stationProfile, ['services', 'frontendRunning'], false);
+    $backendRunning = (bool)azuracast_ArrayGet($stationProfile, ['services', 'backendRunning'], false);
+    if ($frontendRunning || $backendRunning) {
+        $dashboard['statusText'] = ($frontendRunning && $backendRunning) ? 'On the air' : 'Partially online';
+        $dashboard['statusVariant'] = ($frontendRunning && $backendRunning) ? 'live' : 'warning';
+    }
+
+    if (!$frontendRunning && !$backendRunning && null !== $stationProfile) {
+        $dashboard['statusText'] = 'Offline';
+        $dashboard['statusVariant'] = 'offline';
+    }
+
+    $mounts = azuracast_ArrayGet($nowPlaying, ['station', 'mounts'], []);
+    $defaultMount = azuracast_FindDefaultMount(is_array($mounts) ? $mounts : []);
+    $listenUrl = azuracast_ArrayGet($defaultMount, ['url'], azuracast_ArrayGet($nowPlaying, ['station', 'listen_url']));
+    $publicPageUrl = azuracast_ArrayGet($stationDashboard, ['publicPageUrl'], azuracast_ArrayGet($nowPlaying, ['station', 'public_page_url']));
+    $scheduleUrl = azuracast_ArrayGet($stationDashboard, ['publicScheduleUrl']);
+
+    $dashboard['playerUrl'] = is_string($listenUrl) && $listenUrl !== '' ? $listenUrl : null;
+    $dashboard['streamUrl'] = $dashboard['playerUrl'];
+    $dashboard['publicPageUrl'] = is_string($publicPageUrl) && $publicPageUrl !== '' ? $publicPageUrl : null;
+    $dashboard['scheduleUrl'] = is_string($scheduleUrl) && $scheduleUrl !== '' ? $scheduleUrl : null;
+
+    $schedule = azuracast_ArrayGet($stationProfile, ['schedule'], []);
+    if (is_array($schedule) && isset($schedule[0]) && is_array($schedule[0])) {
+        $dashboard['upcomingShow'] = azuracast_ArrayGet($schedule[0], ['title'], azuracast_ArrayGet($schedule[0], ['name']));
+    }
+
+    if (null !== $singleSignOnUrl) {
+        $dashboard['shortcuts'][] = [
+            'label' => 'Login To AzuraCast',
+            'url' => $singleSignOnUrl,
+            'external' => false,
+            'accent' => 'primary',
+        ];
+    }
+
+    if (null !== $dashboard['publicPageUrl']) {
+        $dashboard['shortcuts'][] = [
+            'label' => 'Public Page',
+            'url' => $dashboard['publicPageUrl'],
+            'external' => true,
+            'accent' => 'secondary',
+        ];
+    }
+
+    if (null !== $dashboard['streamUrl']) {
+        $dashboard['shortcuts'][] = [
+            'label' => 'Listen Live',
+            'url' => $dashboard['streamUrl'],
+            'external' => true,
+            'accent' => 'secondary',
+        ];
+    }
+
+    if (null !== $dashboard['scheduleUrl']) {
+        $dashboard['shortcuts'][] = [
+            'label' => 'Public Schedule',
+            'url' => $dashboard['scheduleUrl'],
+            'external' => true,
+            'accent' => 'secondary',
+        ];
+    }
+
+    $dashboard['serviceCards'] = [
+        azuracast_BuildServiceCard('Broadcasting', $frontendRunning),
+        azuracast_BuildServiceCard('AutoDJ', $backendRunning),
+        [
+            'label' => 'Listeners',
+            'value' => (string)$dashboard['listeners'],
+            'variant' => $dashboard['listeners'] > 0 ? 'live' : 'muted',
+            'meta' => 'Current concurrent listeners',
+        ],
+        [
+            'label' => 'Live DJ',
+            'value' => $dashboard['hasLiveBroadcast'] ? 'Connected' : 'Idle',
+            'variant' => $dashboard['hasLiveBroadcast'] ? 'live' : 'muted',
+            'meta' => $dashboard['liveStreamerName'] ?: 'No live streamer connected',
+        ],
+    ];
+
+    $dashboard['quotaCards'] = array_values(array_filter([
+        azuracast_BuildQuotaCard('Media Storage', $mediaQuota),
+        azuracast_BuildQuotaCard('Recordings Storage', $recordingsQuota),
+        azuracast_BuildQuotaCard('Podcasts Storage', $podcastsQuota),
+    ]));
+
+    return $dashboard;
 }
 
 function azuracast_ApiClient($params) : Client
@@ -651,4 +805,84 @@ function azuracast_ValidateSsoRedirectUrl(string $url, string $expectedHost): vo
             sprintf('SSO login URL host "%s" does not match the configured server hostname "%s".', $parsed['host'], $expectedHost)
         );
     }
+}
+
+function azuracast_TryClientAreaRequest(Client $client, string $method, string $uri): ?array
+{
+    try {
+        $data = $client->request($method, $uri);
+        return is_array($data) ? $data : null;
+    } catch (\Throwable $e) {
+        return null;
+    }
+}
+
+function azuracast_ArrayGet(?array $source, array $path, mixed $default = null): mixed
+{
+    if (!is_array($source)) {
+        return $default;
+    }
+
+    $value = $source;
+    foreach ($path as $segment) {
+        if (!is_array($value) || !array_key_exists($segment, $value)) {
+            return $default;
+        }
+
+        $value = $value[$segment];
+    }
+
+    return $value;
+}
+
+function azuracast_FindDefaultMount(array $mounts): ?array
+{
+    foreach ($mounts as $mount) {
+        if (is_array($mount) && !empty($mount['is_default'])) {
+            return $mount;
+        }
+    }
+
+    foreach ($mounts as $mount) {
+        if (is_array($mount)) {
+            return $mount;
+        }
+    }
+
+    return null;
+}
+
+function azuracast_BuildServiceCard(string $label, bool $isRunning): array
+{
+    return [
+        'label' => $label,
+        'value' => $isRunning ? 'Running' : 'Stopped',
+        'variant' => $isRunning ? 'live' : 'offline',
+        'meta' => $isRunning ? 'Service is responding normally' : 'Service is not currently running',
+    ];
+}
+
+function azuracast_BuildQuotaCard(string $label, ?array $quota): ?array
+{
+    if (null === $quota) {
+        return null;
+    }
+
+    $usedPercent = (int)azuracast_ArrayGet($quota, ['used_percent'], 0);
+    if ($usedPercent >= 85) {
+        $variant = 'offline';
+    } elseif ($usedPercent >= 65) {
+        $variant = 'warning';
+    } else {
+        $variant = 'live';
+    }
+
+    return [
+        'label' => $label,
+        'used' => (string)azuracast_ArrayGet($quota, ['used'], '0 B'),
+        'quota' => (string)azuracast_ArrayGet($quota, ['quota'], 'Unlimited'),
+        'usedPercent' => $usedPercent,
+        'meta' => azuracast_ArrayGet($quota, ['available'], null),
+        'variant' => $variant,
+    ];
 }
