@@ -189,10 +189,10 @@ class Service
             return null;
         }
 
+        // WHMCS may pass unexpected values (for example 'on') for unset configoptions
+        // on older product configurations. Ignore invalid locale values safely.
         if (!in_array($locale, self::LOCALE_ALLOWLIST, true)) {
-            throw new \InvalidArgumentException(
-                "Invalid User Language '{$locale}'. Allowed values: " . implode(', ', self::LOCALE_ALLOWLIST)
-            );
+            return null;
         }
 
         return $locale;
@@ -239,6 +239,11 @@ class Service
     public function getUserEmail(): string
     {
         return $this->userEmail;
+    }
+
+    public function getTechnicalEmail(): string
+    {
+        return sprintf('svc-%d@local.invalid', (int)$this->model->id);
     }
 
     public function getUserFullName(): string

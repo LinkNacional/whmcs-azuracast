@@ -114,7 +114,7 @@ class UsersClient extends AbstractClient
 
     /**
      * @param int $userId
-     * @param string $email
+        * @param ?string $email
      * @param string $newPassword
      * @param string $name
      * @param RoleDto[] $roles
@@ -128,7 +128,7 @@ class UsersClient extends AbstractClient
      */
     public function update(
         int $userId,
-        string $email,
+        ?string $email,
         string $newPassword,
         string $name,
         array $roles,
@@ -139,12 +139,15 @@ class UsersClient extends AbstractClient
 
         $payload = [
             'id' => $userId,
-            'email' => $email,
             'name' => $name,
             'created_at' => $createdAt,
             'updated_at' => time(),
             'roles' => $roles,
         ];
+
+        if ($email !== null) {
+            $payload['email'] = $email;
+        }
 
         if ($newPassword !== '') {
             $payload['new_password'] = $newPassword;

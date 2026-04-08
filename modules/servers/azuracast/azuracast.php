@@ -24,8 +24,6 @@ use WHMCS\Module\Server\AzuraCast\Client;
 use WHMCS\Module\Server\AzuraCast\Dto\RoleDto;
 use WHMCS\Module\Server\AzuraCast\Service;
 use WHMCS\Database\Capsule;
-
-const AZURACAST_UPDATE_USER_PASSWORD_ON_ANOTHER_STATION_CREATION = false;
 /**
  * Define module related meta data.
  *
@@ -147,8 +145,6 @@ function azuracast_CreateAccount(array $params)
     $createdStationId           = null;
     $createdRoleId              = null;
     $createdUserId              = null;  // set only when a NEW user is created
-    $existingUserIdWithAddedRole = null; // set when an EXISTING user was updated
-    $rolesBeforeUpdate          = null; // the existing user's roles before we modified them
 
     try {
         // Create or clone a Station depending on whether a template station ID is configured
@@ -193,63 +189,16 @@ function azuracast_CreateAccount(array $params)
         $createdRoleId = $role->getId();
         $service->setRoleId($role->getId());
 
-        // Look for other provisioned services at the same server
-        // (Which means there's already an AzuraCast user associated with the client)
-        $user = null;
-        $otherServices = azuracast_GetOtherActiveServicesAtSameServerForServiceModel($service->getModel());
-        if ($otherServices->isNotEmpty())
-        {
-            $azuracastUserId = $otherServices->first()->serviceProperties->get('userId');
-            $user = $azuracast->admin()->users()->get($azuracastUserId);
-        }
-
-//        if ($user === null) {
-//            // Look for existing user with the same email address
-//            $user = $azuracast->admin()->users()->searchByEmail($service->getUserEmail());
-//        }
-
-        // If user doesn't exists, create it
-        if ($user === null) {
-            $user = $azuracast->admin()->users()->create(
-                $service->getUserEmail(),
-                $service->getPassword(),
-                $service->getUserFullName(),
-                [['id' => $role->getId()]],
-                $service->getUserLocale(),
-                $service->getUserShow24HourTime()
-            );
-            $createdUserId = $user->getId();
-        }
-        else {
-            // Capture the current roles before modifying, for rollback purposes
-            $rolesBeforeUpdate = azuracast_GetCurrentUserRolesArray($user->getRoles());
-            $existingUserIdWithAddedRole = $user->getId();
-
-            // Update user's role
-            $newRoles = $rolesBeforeUpdate;
-            $newRoles[] = ['id' => $role->getId()];
-            $user = $azuracast->admin()->users()->update(
-                $user->getId(),
-                $service->getUserEmail(),
-                AZURACAST_UPDATE_USER_PASSWORD_ON_ANOTHER_STATION_CREATION ? $service->getPassword() : '',
-                $service->getUserFullName(),
-                $newRoles,
-                $user->getCreatedAt(),
-                $service->getUserLocale(),
-                $service->getUserShow24HourTime()
-            );
-
-            if (AZURACAST_UPDATE_USER_PASSWORD_ON_ANOTHER_STATION_CREATION)
-            {
-                // Update the new password for all other related services
-                // This means the existing AzuraCast user's password will be changed
-                // This is inconvinient, but we need to do it IF we want to keep the password in WHMCS in sync with AzuraCast
-                $otherServices->each(function (WHMCS\Service\Service $otherService) use ($service) {
-                    /** @var \Illuminate\Database\Eloquent\Model $otherService */
-                    $otherService->serviceProperties->save(['Password' => $service->getPassword()]);
-                });
-            }
-        }
+        // Create a dedicated user for this service only.
+        $user = $azuracast->admin()->users()->create(
+            $service->getTechnicalEmail(),
+            $service->getPassword(),
+            $service->getUserFullName(),
+            [['id' => $role->getId()]],
+            $service->getUserLocale(),
+            $service->getUserShow24HourTime()
+        );
+        $createdUserId = $user->getId();
         $service->setUserId($user->getId());
 
         // All API calls succeeded — now atomically persist all IDs to the database
@@ -264,25 +213,6 @@ function azuracast_CreateAccount(array $params)
                 $azuracast->admin()->users()->delete($createdUserId);
             } catch (Exception $rollbackEx) {
                 logModuleCall('azuracast', 'CreateAccount_rollback_user', azuracast_SanitizeParams($params), $rollbackEx->getMessage(), $rollbackEx->getTraceAsString());
-            }
-        }
-
-        if ($existingUserIdWithAddedRole !== null && $rolesBeforeUpdate !== null) {
-            try {
-                // Restore the user's roles to their state before we modified them
-                $currentUser = $azuracast->admin()->users()->get($existingUserIdWithAddedRole);
-                $azuracast->admin()->users()->update(
-                    $currentUser->getId(),
-                    $currentUser->getEmail(),
-                    '',
-                    $currentUser->getName(),
-                    $rolesBeforeUpdate,
-                    $currentUser->getCreatedAt(),
-                    $currentUser->getLocale() !== '' ? $currentUser->getLocale() : null,
-                    null
-                );
-            } catch (Exception $rollbackEx) {
-                logModuleCall('azuracast', 'CreateAccount_rollback_user_role', azuracast_SanitizeParams($params), $rollbackEx->getMessage(), $rollbackEx->getTraceAsString());
             }
         }
 
@@ -407,13 +337,8 @@ function azuracast_TerminateAccount(array $params)
         // Remove Station
         $azuracast->admin()->stations()->delete($service->getStationId());
 
-        // Check if WHMCS client has another service
-        // If he doesn't, remove the user
-        $otherServices = azuracast_GetOtherActiveServicesAtSameServerForServiceModel($service->getModel());
-        if ($otherServices->isEmpty())
-        {
-            $azuracast->admin()->users()->delete($service->getUserId());
-        }
+        // Remove the dedicated user for this service.
+        $azuracast->admin()->users()->delete($service->getUserId());
 
     } catch (Exception $e) {
         // Record the error in WHMCS's module log.
@@ -451,7 +376,7 @@ function azuracast_ChangePassword(array $params)
         // Update the user's password
         $user = $azuracast->admin()->users()->update(
             $currentUser->getId(),
-            $currentUser->getEmail(),
+            null,
             $service->getPassword(),
             $currentUser->getName(),
             azuracast_GetCurrentUserRolesArray($currentUser->getRoles()),
@@ -459,17 +384,6 @@ function azuracast_ChangePassword(array $params)
             $currentUser->getLocale() !== '' ? $currentUser->getLocale() : null,
             null
         );
-
-        // Update the new password for all other related services
-        $newPassword = $service->getPassword();
-        $otherServices = azuracast_GetOtherActiveServicesAtSameServerForServiceModel($service->getModel());
-        if ($otherServices->isNotEmpty())
-        {
-            $otherServices->each(function (WHMCS\Service\Service $otherService) use ($newPassword) {
-                /** @var \Illuminate\Database\Eloquent\Model $otherService */
-                $otherService->serviceProperties->save(['Password' => $newPassword]);
-            });
-        }
 
     } catch (Exception $e) {
         // Record the error in WHMCS's module log.
