@@ -123,20 +123,31 @@ function azuracast_CreateAccount(array $params)
     $service = new Service($params);
     $azuracast = azuracast_ApiClient($params);
 
+    // Rollback tracking: record what was successfully created so we can undo on failure.
+    $createdStationId           = null;
+    $createdRoleId              = null;
+    $createdUserId              = null;  // set only when a NEW user is created
+    $existingUserIdWithAddedRole = null; // set when an EXISTING user was updated
+    $rolesBeforeUpdate          = null; // the existing user's roles before we modified them
+
     try {
         // Create a new Station
         /** @var \WHMCS\Module\Server\AzuraCast\Dto\StationDto $station */
         $station = $azuracast->admin()->stations()->create($service);
+        $createdStationId = $station->getId();
+
+        // Stage IDs in-memory (not yet saved to DB) so StorageClient can read them
         $service->setStationId($station->getId());
         $service->setMediaStorageId($station->getMediaStorageId());
         $service->setRecordingsStorageId($station->getRecordingsStorageId());
         $service->setPodcastsStorageId($station->getPodcastsStorageId());
 
         // Modify Station's Storage Quota for each type
-        $storage = $azuracast->admin()->storage()->update($service);
+        $azuracast->admin()->storage()->update($service);
 
         // Create a role for this station
         $role = $azuracast->admin()->roles()->create("Station {$station->getId()} Role", [], [$station->getId() => ["manage station automation", "manage station profile", "manage station broadcasting", "manage station media", "delete station media", "manage station mounts", "manage station podcasts", "manage station remotes", "manage station streamers", "manage station web hooks", "view station management", "view station reports", "view station logs"]]);
+        $createdRoleId = $role->getId();
         $service->setRoleId($role->getId());
 
         // Look for other provisioned services at the same server
@@ -163,10 +174,15 @@ function azuracast_CreateAccount(array $params)
                 'en_US',
                 [['id' => $role->getId()]]
             );
+            $createdUserId = $user->getId();
         }
         else {
+            // Capture the current roles before modifying, for rollback purposes
+            $rolesBeforeUpdate = azuracast_GetCurrentUserRolesArray($user->getRoles());
+            $existingUserIdWithAddedRole = $user->getId();
+
             // Update user's role
-            $newRoles = azuracast_GetCurrentUserRolesArray($user->getRoles());
+            $newRoles = $rolesBeforeUpdate;
             $newRoles[] = ['id' => $role->getId()];
             $user = $azuracast->admin()->users()->update(
                 $user->getId(),
@@ -188,17 +204,63 @@ function azuracast_CreateAccount(array $params)
                     $otherService->serviceProperties->save(['Password' => $service->getPassword()]);
                 });
             }
-
         }
         $service->setUserId($user->getId());
 
+        // All API calls succeeded — now atomically persist all IDs to the database
+        $service->commitIds();
 
     } catch (Exception $e) {
-        // Record the error in WHMCS's module log.
+        // Compensating transactions: undo AzuraCast resources in reverse creation order.
+        // Each step is isolated so a rollback failure does not prevent subsequent rollbacks.
+
+        if ($createdUserId !== null) {
+            try {
+                $azuracast->admin()->users()->delete($createdUserId);
+            } catch (Exception $rollbackEx) {
+                logModuleCall('azuracast', 'CreateAccount_rollback_user', azuracast_SanitizeParams($params), $rollbackEx->getMessage(), $rollbackEx->getTraceAsString());
+            }
+        }
+
+        if ($existingUserIdWithAddedRole !== null && $rolesBeforeUpdate !== null) {
+            try {
+                // Restore the user's roles to their state before we modified them
+                $currentUser = $azuracast->admin()->users()->get($existingUserIdWithAddedRole);
+                $azuracast->admin()->users()->update(
+                    $currentUser->getId(),
+                    $currentUser->getEmail(),
+                    '',
+                    $currentUser->getName(),
+                    $currentUser->getLocale(),
+                    $rolesBeforeUpdate,
+                    $currentUser->getCreatedAt(),
+                );
+            } catch (Exception $rollbackEx) {
+                logModuleCall('azuracast', 'CreateAccount_rollback_user_role', azuracast_SanitizeParams($params), $rollbackEx->getMessage(), $rollbackEx->getTraceAsString());
+            }
+        }
+
+        if ($createdRoleId !== null) {
+            try {
+                $azuracast->admin()->roles()->delete($createdRoleId);
+            } catch (Exception $rollbackEx) {
+                logModuleCall('azuracast', 'CreateAccount_rollback_role', azuracast_SanitizeParams($params), $rollbackEx->getMessage(), $rollbackEx->getTraceAsString());
+            }
+        }
+
+        if ($createdStationId !== null) {
+            try {
+                $azuracast->admin()->stations()->delete($createdStationId);
+            } catch (Exception $rollbackEx) {
+                logModuleCall('azuracast', 'CreateAccount_rollback_station', azuracast_SanitizeParams($params), $rollbackEx->getMessage(), $rollbackEx->getTraceAsString());
+            }
+        }
+
+        // Record the original error in WHMCS's module log.
         logModuleCall(
             'azuracast',
             __FUNCTION__,
-            $params,
+            azuracast_SanitizeParams($params),
             $e->getMessage(),
             $e->getTraceAsString()
         );
@@ -232,7 +294,7 @@ function azuracast_SuspendAccount(array $params)
         logModuleCall(
             'azuracast',
             __FUNCTION__,
-            $params,
+            azuracast_SanitizeParams($params),
             $e->getMessage(),
             $e->getTraceAsString()
         );
@@ -266,7 +328,7 @@ function azuracast_UnsuspendAccount(array $params)
         logModuleCall(
             'azuracast',
             __FUNCTION__,
-            $params,
+            azuracast_SanitizeParams($params),
             $e->getMessage(),
             $e->getTraceAsString()
         );
@@ -312,7 +374,7 @@ function azuracast_TerminateAccount(array $params)
         logModuleCall(
             'azuracast',
             __FUNCTION__,
-            $params,
+            azuracast_SanitizeParams($params),
             $e->getMessage(),
             $e->getTraceAsString()
         );
@@ -367,7 +429,7 @@ function azuracast_ChangePassword(array $params)
         logModuleCall(
             'azuracast',
             __FUNCTION__,
-            $params,
+            azuracast_SanitizeParams($params),
             $e->getMessage(),
             $e->getTraceAsString()
         );
@@ -404,7 +466,7 @@ function azuracast_ChangePackage(array $params)
         logModuleCall(
             'azuracast',
             __FUNCTION__,
-            $params,
+            azuracast_SanitizeParams($params),
             $e->getMessage(),
             $e->getTraceAsString()
         );
@@ -437,7 +499,7 @@ function azuracast_TestConnection(array $params)
         logModuleCall(
             'azuracast',
             __FUNCTION__,
-            $params,
+            azuracast_SanitizeParams($params),
             $e->getMessage(),
             $e->getTraceAsString()
         );
@@ -473,6 +535,7 @@ function azuracast_ServiceSingleSignOn(array $params)
         $service = new Service($params);
         $azuracast = azuracast_ApiClient($params);
         $loginUrl = $azuracast->admin()->users()->getLoginLink($service->getUserId());
+        azuracast_ValidateSsoRedirectUrl($loginUrl, $params['serverhostname']);
 
         $return = array(
             'success' => true,
@@ -484,12 +547,13 @@ function azuracast_ServiceSingleSignOn(array $params)
         logModuleCall(
             'azuracast',
             __FUNCTION__,
-            $params,
+            azuracast_SanitizeParams($params),
             $e->getMessage(),
             $e->getTraceAsString()
         );
 
-        return $e->getMessage();
+        $return['error'] = $e->getMessage();
+        return $return;
     }
 
     return $return;
@@ -504,7 +568,7 @@ function azuracast_ServiceSingleSignOn(array $params)
  *
  * @return array
  */
-function provisioningmodule_AdminSingleSignOn(array $params)
+function azuracast_AdminSingleSignOn(array $params)
 {
     $return = array(
         'success' => false,
@@ -516,6 +580,7 @@ function provisioningmodule_AdminSingleSignOn(array $params)
         $azuracast = azuracast_ApiClient($params);
         $administratorUserId = $azuracast->admin()->users()->getAdministratorUserIdFromToken();
         $loginUrl = $azuracast->admin()->users()->getLoginLink($administratorUserId);
+        azuracast_ValidateSsoRedirectUrl($loginUrl, $params['serverhostname']);
 
         $return = array(
             'success' => true,
@@ -527,12 +592,13 @@ function provisioningmodule_AdminSingleSignOn(array $params)
         logModuleCall(
             'azuracast',
             __FUNCTION__,
-            $params,
+            azuracast_SanitizeParams($params),
             $e->getMessage(),
             $e->getTraceAsString()
         );
 
-        return $e->getMessage();
+        $return['error'] = $e->getMessage();
+        return $return;
     }
 
     return $return;
@@ -588,4 +654,40 @@ function azuracast_GetOtherActiveServicesAtSameServerForServiceModel(WHMCS\Servi
     $currentServiceId = $serviceModel->id;
 
     return $serviceModel->client->services()->whereIn('domainStatus', ['Active', 'Suspended'])->where('server', $currentServerId)->where('id', '!=', $currentServiceId)->get();
+}
+
+/**
+ * Redacts sensitive fields from $params before passing to logModuleCall.
+ * Removes secrets (API key, passwords) and PII (client details) from log output.
+ */
+function azuracast_SanitizeParams(array $params): array
+{
+    $sensitiveKeys = ['serveraccesshash', 'password', 'serverpassword', 'clientsdetails'];
+    foreach ($sensitiveKeys as $key) {
+        if (array_key_exists($key, $params)) {
+            $params[$key] = '[REDACTED]';
+        }
+    }
+    return $params;
+}
+
+/**
+ * Validates that a login URL returned by the AzuraCast API points to the expected server host.
+ * Prevents open redirect attacks if the remote API is compromised or misconfigured.
+ * Note: if AzuraCast runs behind a CDN/proxy with a different hostname than $expectedHost,
+ * this check will fail. In that case, update $expectedHost to match the actual redirect hostname.
+ *
+ * @throws \RuntimeException if the URL host does not match the expected server hostname.
+ */
+function azuracast_ValidateSsoRedirectUrl(string $url, string $expectedHost): void
+{
+    $parsed = parse_url($url);
+    if ($parsed === false || !isset($parsed['host'])) {
+        throw new \RuntimeException('SSO login URL returned by AzuraCast is invalid or malformed.');
+    }
+    if (strcasecmp($parsed['host'], $expectedHost) !== 0) {
+        throw new \RuntimeException(
+            sprintf('SSO login URL host "%s" does not match the configured server hostname "%s".', $parsed['host'], $expectedHost)
+        );
+    }
 }

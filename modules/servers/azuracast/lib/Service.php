@@ -18,25 +18,40 @@ class Service
     private int $mediaStorage, $recordingsStorage, $podcastsStorage;
 
     private int|string $maxListeners;
-    private string $statioName;
+    private string $stationName;
     private string $userEmail;
     private string $userFullName;
     private string $password;
     private string $serverType;
     private Model $model;
+    /**
+     * Holds IDs staged during provisioning before they are persisted to serviceProperties.
+     * Call commitIds() after all API calls succeed to write them to the database.
+     * If creation fails mid-way, these are never persisted, keeping DB state clean.
+     */
+    private array $pendingIds = [];
 
     public function __construct(array $params)
     {
         $this->maxBitrate = $params['configoption1'] ?? 0;
         $this->maxMounts = $params['configoption2'] ?? 0;
         $this->maxHlsStreams = $params['configoption3'] ?? 0;
-        $this->mediaStorage = $params['configoption4'];
-        $this->recordingsStorage = $params['configoption5'];
-        $this->podcastsStorage = $params['configoption6'];
-        $this->maxListeners = $params['configoption7'];
-        $this->serverType = $params['configoption8'];
+        $this->mediaStorage = (int)($params['configoption4'] ?? 0);
+        $this->recordingsStorage = (int)($params['configoption5'] ?? 0);
+        $this->podcastsStorage = (int)($params['configoption6'] ?? 0);
+        $this->maxListeners = $params['configoption7'] ?? 0;
+        // Allowlist: update this list if AzuraCast adds new frontend types in the future.
+        $serverType = $params['configoption8'] ?? 'icecast';
+        if (!in_array($serverType, ['icecast', 'shoutcast'], true)) {
+            throw new \InvalidArgumentException("Invalid Server Type '{$serverType}'. Allowed values: icecast, shoutcast.");
+        }
+        $this->serverType = $serverType;
         $this->password = $params['password'];
-        $this->statioName = $params['customfields']['Station Name'];
+        $stationName = $params['customfields']['Station Name'] ?? '';
+        if ($stationName === '') {
+            throw new \InvalidArgumentException('Station Name custom field is required and cannot be empty.');
+        }
+        $this->stationName = $stationName;
         $this->userFullName = $params['clientsdetails']['fullname'];
         $this->userEmail = $params['clientsdetails']['email'];
         $this->model = $params['model'];
@@ -94,12 +109,12 @@ class Service
 
     public function getStationName(): string
     {
-        return $this->statioName;
+        return $this->stationName;
     }
 
     public function getStationShortName(): string
     {
-        return strtolower(str_replace(' ', '_', $this->statioName));
+        return strtolower(str_replace(' ', '_', $this->stationName));
     }
 
     public function getServerType(): string
@@ -129,62 +144,74 @@ class Service
 
     public function setStationId(int $stationId): void
     {
-        $this->model->serviceProperties->save(['stationId' => $stationId]);
+        $this->pendingIds['stationId'] = $stationId;
     }
 
     public function getStationId(): ?int
     {
-        return $this->model->serviceProperties->get('stationId');
+        return $this->pendingIds['stationId'] ?? $this->model->serviceProperties->get('stationId');
     }
 
     public function setUserId(int $userId): void
     {
-        $this->model->serviceProperties->save(['userId' => $userId]);
+        $this->pendingIds['userId'] = $userId;
     }
 
     public function getUserId(): ?int
     {
-        return $this->model->serviceProperties->get('userId');
+        return $this->pendingIds['userId'] ?? $this->model->serviceProperties->get('userId');
     }
 
     public function setRoleId(int $roleId): void
     {
-        $this->model->serviceProperties->save(['roleId' => $roleId]);
+        $this->pendingIds['roleId'] = $roleId;
     }
 
     public function getRoleId(): ?int
     {
-        return $this->model->serviceProperties->get('roleId');
+        return $this->pendingIds['roleId'] ?? $this->model->serviceProperties->get('roleId');
     }
 
     public function setMediaStorageId(int $mediaStorageId): void
     {
-        $this->model->serviceProperties->save(['mediaStorageId' => $mediaStorageId]);
+        $this->pendingIds['mediaStorageId'] = $mediaStorageId;
     }
 
     public function getMediaStorageId(): ?int
     {
-        return $this->model->serviceProperties->get('mediaStorageId');
+        return $this->pendingIds['mediaStorageId'] ?? $this->model->serviceProperties->get('mediaStorageId');
     }
 
     public function setRecordingsStorageId(int $recordingsStorageId): void
     {
-        $this->model->serviceProperties->save(['recordingsStorageId' => $recordingsStorageId]);
+        $this->pendingIds['recordingsStorageId'] = $recordingsStorageId;
     }
 
     public function getRecordingsStorageId(): ?int
     {
-        return $this->model->serviceProperties->get('recordingsStorageId');
+        return $this->pendingIds['recordingsStorageId'] ?? $this->model->serviceProperties->get('recordingsStorageId');
     }
 
     public function setPodcastsStorageId(int $podcastsStorageId): void
     {
-        $this->model->serviceProperties->save(['podcastsStorageId' => $podcastsStorageId]);
+        $this->pendingIds['podcastsStorageId'] = $podcastsStorageId;
     }
 
     public function getPodcastsStorageId(): ?int
     {
-        return $this->model->serviceProperties->get('podcastsStorageId');
+        return $this->pendingIds['podcastsStorageId'] ?? $this->model->serviceProperties->get('podcastsStorageId');
+    }
+
+    /**
+     * Persists all IDs staged via the set*Id() methods to the WHMCS serviceProperties database.
+     * Call this only after all AzuraCast API calls have succeeded.
+     */
+    public function commitIds(): void
+    {
+        foreach ($this->pendingIds as $key => $value) {
+            $this->model->serviceProperties->save([$key => $value]);
+        }
+        $this->pendingIds = [];
     }
 
     public function getModel(): Model

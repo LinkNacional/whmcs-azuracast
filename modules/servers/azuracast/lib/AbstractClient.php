@@ -70,6 +70,17 @@ abstract class AbstractClient
             ));
         }
 
-        return json_decode($response->getBody()->getContents(), true);
+        $body = $response->getBody()->getContents();
+        $decoded = json_decode($body, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new Exception\ClientRequestException(sprintf(
+                'Call to "%s" returned non-JSON response: %s',
+                $uri,
+                $body
+            ));
+        }
+
+        return $decoded;
     }
 }

@@ -145,15 +145,13 @@ class UsersClient extends AbstractClient
             $userDto->setNewPassword($newPassword);
         }
 
-        $this->request(
+        $userData = $this->request(
             'PUT',
             sprintf('admin/user/%s', $userId),
             ['json' => $userDto]
         );
 
-        $userDto->setNewPassword('');
-
-        return $userDto;
+        return Dto\UserDto::fromArray($userData);
     }
 
     /**
