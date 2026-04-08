@@ -4,12 +4,12 @@
  *
  * This module allows you to provision AzuraCast instances from WHMCS
  *
- * When setting up a new AzuraCast product in WHMCS, you will need to set the following Custom Fiels:
+ * When setting up a new AzuraCast product in WHMCS, you can set the following Custom Fiels:
  * Field Name: Station Name
  * Field Type: Text Box
  * Field Description: The Station Name - English Characters, Numbers and Spaces Only.
  * Validation: /^[A-Za-z0-9 ]+$/
- * Required Field, Show on Order Form
+ * Optional field. If empty, the module auto-generates a deterministic station name.
  *
  * @written_by Yahav [DOT] Shasha [AT] gmail [DOT] com
  * @license Within the Lib folder there are some modified files from the [official AzuraCast PHP SDK](https://github.com/AzuraCast/php-api-client) (Apache-2.0 license)

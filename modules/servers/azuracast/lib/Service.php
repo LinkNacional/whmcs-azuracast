@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Service
 {
+    private const SHORT_NAME_MAX_LENGTH = 63;
+
     /**
      * @var int Bitrate in Kbps
      */
@@ -50,14 +52,14 @@ class Service
         // 0 or empty => no clone. Cast to int first so '' becomes 0.
         $this->cloneSourceStationId = (int)($params['configoption9'] ?? 0) ?: null;
         $this->password = $params['password'];
-        $stationName = $params['customfields']['Station Name'] ?? '';
+        $this->model = $params['model'];
+        $stationName = trim((string)($params['customfields']['Station Name'] ?? ''));
         if ($stationName === '') {
-            throw new \InvalidArgumentException('Station Name custom field is required and cannot be empty.');
+            $stationName = $this->generateDefaultStationName($params);
         }
         $this->stationName = $stationName;
         $this->userFullName = $params['clientsdetails']['fullname'];
         $this->userEmail = $params['clientsdetails']['email'];
-        $this->model = $params['model'];
     }
 
     public function getMaxBitrate(): int
@@ -117,7 +119,51 @@ class Service
 
     public function getStationShortName(): string
     {
-        return strtolower(str_replace(' ', '_', $this->stationName));
+        return self::normalizeShortName($this->stationName);
+    }
+
+    public static function normalizeShortName(string $stationName): string
+    {
+        $normalized = strtolower(trim($stationName));
+        $normalized = str_replace(' ', '_', $normalized);
+        $normalized = preg_replace('/_+/', '_', $normalized) ?? '';
+        $normalized = trim($normalized, '_');
+        $normalized = preg_replace('/[^a-z0-9_]/', '', $normalized) ?? '';
+
+        if ($normalized === '') {
+            throw new \InvalidArgumentException('Station short_name is empty after normalization.');
+        }
+
+        if (strlen($normalized) <= self::SHORT_NAME_MAX_LENGTH) {
+            return $normalized;
+        }
+
+        $hashSuffix = substr(md5($normalized), 0, 12);
+        $prefixLength = self::SHORT_NAME_MAX_LENGTH - 1 - strlen($hashSuffix);
+        $prefix = substr($normalized, 0, $prefixLength);
+
+        return $prefix . '_' . $hashSuffix;
+    }
+
+    private function generateDefaultStationName(array $params): string
+    {
+        $serviceId = (int)($params['serviceid'] ?? 0);
+        if ($serviceId > 0) {
+            return 'OWH_S' . $serviceId;
+        }
+
+        $modelId = (int)($this->model->id ?? 0);
+        if ($modelId > 0) {
+            return 'OWH_M' . $modelId;
+        }
+
+        $userId = (int)($params['clientsdetails']['userid'] ?? 0);
+        if ($userId > 0) {
+            return 'OWH_U' . $userId;
+        }
+
+        $seed = (string)($params['clientsdetails']['email'] ?? 'owh-station');
+        return 'OWH_A' . strtoupper(substr(sha1($seed), 0, 10));
     }
 
     public function getServerType(): string

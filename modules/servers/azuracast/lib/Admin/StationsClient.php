@@ -167,16 +167,23 @@ class StationsClient extends AbstractClient
             );
         }
 
-        // Locate the new station by its unique short_name to avoid any diff-based race condition.
-        $stations = $this->list();
-        foreach ($stations as $station) {
-            if ($station->getShortName() === $shortName) {
-                return $station;
+        // Locate by unique short_name and retry briefly for eventual consistency in station listing.
+        $attempts = 3;
+        for ($attempt = 1; $attempt <= $attempts; $attempt++) {
+            $stations = $this->list();
+            foreach ($stations as $station) {
+                if ($station->getShortName() === $shortName) {
+                    return $station;
+                }
+            }
+
+            if ($attempt < $attempts) {
+                usleep($attempt * 300000);
             }
         }
 
         throw new ClientRequestException(
-            sprintf('Cloned station with short_name "%s" not found after clone operation', $shortName)
+            sprintf('Cloned station with short_name "%s" not found after %d lookup attempts', $shortName, $attempts)
         );
     }
 
