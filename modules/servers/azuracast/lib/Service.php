@@ -26,6 +26,8 @@ class Service
     private string $password;
     private string $serverType;
     private ?int $cloneSourceStationId;
+    private ?string $userLocale;
+    private ?bool $userShow24HourTime;
     private Model $model;
     /**
      * Holds IDs staged during provisioning before they are persisted to serviceProperties.
@@ -51,6 +53,8 @@ class Service
         $this->serverType = $serverType;
         // 0 or empty => no clone. Cast to int first so '' becomes 0.
         $this->cloneSourceStationId = (int)($params['configoption9'] ?? 0) ?: null;
+        $this->userLocale = $this->parseUserLocale($params['configoption10'] ?? null);
+        $this->userShow24HourTime = $this->parseUserShow24HourTime($params['configoption11'] ?? null);
         $this->password = $params['password'];
         $this->model = $params['model'];
         $stationName = trim((string)($params['customfields']['Station Name'] ?? ''));
@@ -166,6 +170,52 @@ class Service
         return 'OWH_A' . strtoupper(substr(sha1($seed), 0, 10));
     }
 
+    // Keep in sync with ConfigOptions 'User Language' and the azuracast_locale list in AzuraCast.
+    // Reference: https://github.com/AzuraCast/AzuraCast/blob/main/config/locales.php
+    private const LOCALE_ALLOWLIST = [
+        'en_US', 'pt_BR', 'es_ES', 'de_DE', 'fr_FR', 'it_IT', 'nl_NL',
+        'pl_PL', 'tr_TR', 'ru_RU', 'ja_JP', 'ko_KR', 'zh_CN',
+        'cs_CZ', 'nb_NO', 'el_GR', 'sv_SE', 'uk_UA',
+    ];
+
+    private function parseUserLocale(mixed $value): ?string
+    {
+        if (!is_string($value)) {
+            return null;
+        }
+
+        $locale = trim($value);
+        if ($locale === '') {
+            return null;
+        }
+
+        if (!in_array($locale, self::LOCALE_ALLOWLIST, true)) {
+            throw new \InvalidArgumentException(
+                "Invalid User Language '{$locale}'. Allowed values: " . implode(', ', self::LOCALE_ALLOWLIST)
+            );
+        }
+
+        return $locale;
+    }
+
+    private function parseUserShow24HourTime(mixed $value): ?bool
+    {
+        if (!is_string($value)) {
+            return null;
+        }
+
+        $timeDisplay = trim($value);
+        if ($timeDisplay === '24') {
+            return true;
+        }
+
+        if ($timeDisplay === '12') {
+            return false;
+        }
+
+        return null;
+    }
+
     public function getServerType(): string
     {
         return $this->serverType;
@@ -174,6 +224,16 @@ class Service
     public function getCloneSourceStationId(): ?int
     {
         return $this->cloneSourceStationId;
+    }
+
+    public function getUserLocale(): ?string
+    {
+        return $this->userLocale;
+    }
+
+    public function getUserShow24HourTime(): ?bool
+    {
+        return $this->userShow24HourTime;
     }
 
     public function getUserEmail(): string

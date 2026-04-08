@@ -71,10 +71,9 @@ class UsersClient extends AbstractClient
      * @param string $email
      * @param string $newPassword
      * @param string $name
-     * @param string $locale
-     * @param string $theme
      * @param RoleDto[] $roles
-     * @param ApiKeyDto[] $apiKeys
+     * @param ?string $locale
+     * @param ?bool $show24HourTime
      *
      * @return Dto\UserDto
      *
@@ -85,24 +84,29 @@ class UsersClient extends AbstractClient
         string $email,
         string $newPassword,
         string $name,
-        string $locale,
-        array $roles
+        array $roles,
+        ?string $locale = null,
+        ?bool $show24HourTime = null
     ): Dto\UserDto {
-        $userDto = new Dto\UserDto(
-            0,
-            $email,
-            $name,
-            $locale,
-            time(),
-            time(),
-            $roles
-        );
-        $userDto->setNewPassword($newPassword);
+        $payload = [
+            'email' => $email,
+            'new_password' => $newPassword,
+            'name' => $name,
+            'roles' => $roles,
+        ];
+
+        if ($locale !== null) {
+            $payload['locale'] = $locale;
+        }
+
+        if ($show24HourTime !== null) {
+            $payload['show_24_hour_time'] = $show24HourTime;
+        }
 
         $userData = $this->request(
             'POST',
             'admin/users',
-            ['json' => $userDto]
+            ['json' => $payload]
         );
 
         return Dto\UserDto::fromArray($userData);
@@ -113,9 +117,10 @@ class UsersClient extends AbstractClient
      * @param string $email
      * @param string $newPassword
      * @param string $name
-     * @param string $locale
      * @param RoleDto[] $roles
      * @param int $createdAt
+     * @param ?string $locale
+     * @param ?bool $show24HourTime
      * @return UserDto
      *
      * @throws AccessDeniedException
@@ -126,29 +131,37 @@ class UsersClient extends AbstractClient
         string $email,
         string $newPassword,
         string $name,
-        string $locale,
         array $roles,
-        int $createdAt
+        int $createdAt,
+        ?string $locale = null,
+        ?bool $show24HourTime = null
     ): Dto\UserDto {
 
-        $userDto = new Dto\UserDto(
-            $userId,
-            $email,
-            $name,
-            $locale,
-            $createdAt,
-            time(),
-            $roles
-        );
+        $payload = [
+            'id' => $userId,
+            'email' => $email,
+            'name' => $name,
+            'created_at' => $createdAt,
+            'updated_at' => time(),
+            'roles' => $roles,
+        ];
 
         if ($newPassword !== '') {
-            $userDto->setNewPassword($newPassword);
+            $payload['new_password'] = $newPassword;
+        }
+
+        if ($locale !== null) {
+            $payload['locale'] = $locale;
+        }
+
+        if ($show24HourTime !== null) {
+            $payload['show_24_hour_time'] = $show24HourTime;
         }
 
         $userData = $this->request(
             'PUT',
             sprintf('admin/user/%s', $userId),
-            ['json' => $userDto]
+            ['json' => $payload]
         );
 
         return Dto\UserDto::fromArray($userData);

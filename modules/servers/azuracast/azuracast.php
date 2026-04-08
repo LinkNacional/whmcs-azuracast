@@ -111,6 +111,20 @@ function azuracast_ConfigOptions()
             'Size' => '10',
             'Default' => '0',
             'Description' => 'Numeric ID of the OWH_ template station to clone. Enter 0 (or leave blank) to create a new station from scratch.',
+        ],
+        'User Language' => [
+            'FriendlyName' => 'User Language',
+            'Type' => 'dropdown',
+            'Options' => ',en_US,pt_BR,es_ES,de_DE,fr_FR,it_IT,nl_NL,pl_PL,tr_TR,ru_RU,ja_JP,ko_KR,zh_CN,cs_CZ,nb_NO,el_GR,sv_SE,uk_UA',
+            'Description' => 'Optional. If empty, do not send locale and let AzuraCast use its default.',
+            'Default' => '',
+        ],
+        'User Time Display' => [
+            'FriendlyName' => 'User Time Display',
+            'Type' => 'dropdown',
+            'Options' => ',12,24',
+            'Description' => 'Optional. If empty, do not send show_24_hour_time and let AzuraCast use its default.',
+            'Default' => '',
         ]
     );
 }
@@ -200,8 +214,9 @@ function azuracast_CreateAccount(array $params)
                 $service->getUserEmail(),
                 $service->getPassword(),
                 $service->getUserFullName(),
-                'en_US',
-                [['id' => $role->getId()]]
+                [['id' => $role->getId()]],
+                $service->getUserLocale(),
+                $service->getUserShow24HourTime()
             );
             $createdUserId = $user->getId();
         }
@@ -218,9 +233,10 @@ function azuracast_CreateAccount(array $params)
                 $service->getUserEmail(),
                 AZURACAST_UPDATE_USER_PASSWORD_ON_ANOTHER_STATION_CREATION ? $service->getPassword() : '',
                 $service->getUserFullName(),
-                'en_US',
                 $newRoles,
                 $user->getCreatedAt(),
+                $service->getUserLocale(),
+                $service->getUserShow24HourTime()
             );
 
             if (AZURACAST_UPDATE_USER_PASSWORD_ON_ANOTHER_STATION_CREATION)
@@ -260,9 +276,10 @@ function azuracast_CreateAccount(array $params)
                     $currentUser->getEmail(),
                     '',
                     $currentUser->getName(),
-                    $currentUser->getLocale(),
                     $rolesBeforeUpdate,
                     $currentUser->getCreatedAt(),
+                    $currentUser->getLocale() !== '' ? $currentUser->getLocale() : null,
+                    null
                 );
             } catch (Exception $rollbackEx) {
                 logModuleCall('azuracast', 'CreateAccount_rollback_user_role', azuracast_SanitizeParams($params), $rollbackEx->getMessage(), $rollbackEx->getTraceAsString());
@@ -437,9 +454,10 @@ function azuracast_ChangePassword(array $params)
             $currentUser->getEmail(),
             $service->getPassword(),
             $currentUser->getName(),
-            $currentUser->getLocale(),
             azuracast_GetCurrentUserRolesArray($currentUser->getRoles()),
             $currentUser->getCreatedAt(),
+            $currentUser->getLocale() !== '' ? $currentUser->getLocale() : null,
+            null
         );
 
         // Update the new password for all other related services
