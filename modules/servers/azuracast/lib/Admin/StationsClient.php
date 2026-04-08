@@ -134,6 +134,53 @@ class StationsClient extends AbstractClient
     }
 
     /**
+     * Clone an existing station, then apply the plan's station name and limits.
+     *
+     * The clone endpoint returns {"status":"created"} without the new station's ID.
+     * We locate the cloned station by its short_name, which AzuraCast enforces as unique,
+     * so this lookup is race-condition-safe even under concurrent provisioning.
+     *
+     * @param int      $sourceStationId  ID of the OWH_ template station to clone from
+     * @param string   $stationName      Final station name for the new station
+     * @param string   $shortName        Derived short_name (must match AzuraCast's own derivation)
+     * @param string[] $cloneItems       Components to copy (e.g. playlists, mounts, streamers…)
+     *
+     * @return Dto\StationDto
+     *
+     * @throws Exception\AccessDeniedException
+     * @throws Exception\ClientRequestException
+     */
+    public function clone(int $sourceStationId, string $stationName, string $shortName, array $cloneItems): Dto\StationDto
+    {
+        $response = $this->request(
+            'POST',
+            sprintf('admin/station/%d/clone', $sourceStationId),
+            ['json' => [
+                'name'  => $stationName,
+                'clone' => $cloneItems,
+            ]]
+        );
+
+        if (!isset($response['success']) || $response['success'] !== true) {
+            throw new ClientRequestException(
+                sprintf('Clone request failed for source station %d: %s', $sourceStationId, $response['message'] ?? 'unknown error')
+            );
+        }
+
+        // Locate the new station by its unique short_name to avoid any diff-based race condition.
+        $stations = $this->list();
+        foreach ($stations as $station) {
+            if ($station->getShortName() === $shortName) {
+                return $station;
+            }
+        }
+
+        throw new ClientRequestException(
+            sprintf('Cloned station with short_name "%s" not found after clone operation', $shortName)
+        );
+    }
+
+    /**
      * ----------------------------------------------------------------------------------
      * THIS DOESN'T WORK YET AS AZURACAST DOESN'T HAVE AN API ENDPOINT FOR USER LOGIN
      * ----------------------------------------------------------------------------------

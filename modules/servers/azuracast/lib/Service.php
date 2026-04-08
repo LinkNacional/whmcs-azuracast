@@ -23,6 +23,7 @@ class Service
     private string $userFullName;
     private string $password;
     private string $serverType;
+    private ?int $cloneSourceStationId;
     private Model $model;
     /**
      * Holds IDs staged during provisioning before they are persisted to serviceProperties.
@@ -46,6 +47,8 @@ class Service
             throw new \InvalidArgumentException("Invalid Server Type '{$serverType}'. Allowed values: icecast, shoutcast.");
         }
         $this->serverType = $serverType;
+        // 0 or empty => no clone. Cast to int first so '' becomes 0.
+        $this->cloneSourceStationId = (int)($params['configoption9'] ?? 0) ?: null;
         $this->password = $params['password'];
         $stationName = $params['customfields']['Station Name'] ?? '';
         if ($stationName === '') {
@@ -120,6 +123,11 @@ class Service
     public function getServerType(): string
     {
         return $this->serverType;
+    }
+
+    public function getCloneSourceStationId(): ?int
+    {
+        return $this->cloneSourceStationId;
     }
 
     public function getUserEmail(): string

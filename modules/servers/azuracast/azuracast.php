@@ -105,6 +105,12 @@ function azuracast_ConfigOptions()
             "Options" => "icecast,shoutcast",
             "Description" => "The Frontend Type of the Station",
             "Default" => "icecast",
+        ],
+        'Clone Source Station ID' => [
+            'Type' => 'text',
+            'Size' => '10',
+            'Default' => '0',
+            'Description' => 'Numeric ID of the OWH_ template station to clone. Enter 0 (or leave blank) to create a new station from scratch.',
         ]
     );
 }
@@ -131,16 +137,39 @@ function azuracast_CreateAccount(array $params)
     $rolesBeforeUpdate          = null; // the existing user's roles before we modified them
 
     try {
-        // Create a new Station
+        // Create or clone a Station depending on whether a template station ID is configured
         /** @var \WHMCS\Module\Server\AzuraCast\Dto\StationDto $station */
-        $station = $azuracast->admin()->stations()->create($service);
-        $createdStationId = $station->getId();
+        $cloneSourceId = $service->getCloneSourceStationId();
+        if ($cloneSourceId !== null) {
+            // Clone the template station and copy selected components.
+            // Storage locations are intentionally excluded so each client gets isolated storage.
+            // Permissions are excluded because the module creates a fresh role for this service.
+            $station = $azuracast->admin()->stations()->clone(
+                $cloneSourceId,
+                $service->getStationName(),
+                $service->getStationShortName(),
+                ['playlists', 'mounts', 'remotes', 'streamers', 'webhooks']
+            );
+            $createdStationId = $station->getId();
 
-        // Stage IDs in-memory (not yet saved to DB) so StorageClient can read them
-        $service->setStationId($station->getId());
-        $service->setMediaStorageId($station->getMediaStorageId());
-        $service->setRecordingsStorageId($station->getRecordingsStorageId());
-        $service->setPodcastsStorageId($station->getPodcastsStorageId());
+            // Stage IDs in-memory (not yet saved to DB) so StorageClient can read them
+            $service->setStationId($station->getId());
+            $service->setMediaStorageId($station->getMediaStorageId());
+            $service->setRecordingsStorageId($station->getRecordingsStorageId());
+            $service->setPodcastsStorageId($station->getPodcastsStorageId());
+
+            // Override plan limits — clone copied the template's limits, which must be replaced
+            $azuracast->admin()->stations()->update($service);
+        } else {
+            $station = $azuracast->admin()->stations()->create($service);
+            $createdStationId = $station->getId();
+
+            // Stage IDs in-memory (not yet saved to DB) so StorageClient can read them
+            $service->setStationId($station->getId());
+            $service->setMediaStorageId($station->getMediaStorageId());
+            $service->setRecordingsStorageId($station->getRecordingsStorageId());
+            $service->setPodcastsStorageId($station->getPodcastsStorageId());
+        }
 
         // Modify Station's Storage Quota for each type
         $azuracast->admin()->storage()->update($service);
