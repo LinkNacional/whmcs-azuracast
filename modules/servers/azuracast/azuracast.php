@@ -23,7 +23,6 @@ if (!defined("WHMCS")) {
 use WHMCS\Module\Server\AzuraCast\Client;
 use WHMCS\Module\Server\AzuraCast\Dto\RoleDto;
 use WHMCS\Module\Server\AzuraCast\Service;
-use WHMCS\Database\Capsule;
 /**
  * Define module related meta data.
  *
@@ -761,14 +760,6 @@ function azuracast_GetCurrentUserRolesArray(array $existingUserRoles)
     }
 
     return $roles;
-}
-
-function azuracast_GetOtherActiveServicesAtSameServerForServiceModel(WHMCS\Service\Service $serviceModel): \Illuminate\Database\Eloquent\Collection
-{
-    $currentServerId = $serviceModel->server;
-    $currentServiceId = $serviceModel->id;
-
-    return $serviceModel->client->services()->whereIn('domainStatus', ['Active', 'Suspended'])->where('server', $currentServerId)->where('id', '!=', $currentServiceId)->get();
 }
 
 /**

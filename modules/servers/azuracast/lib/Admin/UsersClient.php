@@ -32,24 +32,6 @@ class UsersClient extends AbstractClient
     }
 
     /**
-     * @return ?Dto\UserDto
-     *
-     * @throws Exception\AccessDeniedException
-     * @throws Exception\ClientRequestException
-     */
-    public function searchByEmail($email): ?Dto\UserDto
-    {
-        $usersData = $this->request('GET', 'admin/users');
-
-        foreach ($usersData as $userData) {
-            if ($userData['email'] === $email) {
-                return Dto\UserDto::fromArray($userData);
-            }
-        }
-        return null;
-    }
-
-    /**
      * @param int $userId
      *
      * @return Dto\UserDto
@@ -113,8 +95,8 @@ class UsersClient extends AbstractClient
     }
 
     /**
-     * @param int $userId
-        * @param ?string $email
+      * @param int $userId
+      * @param ?string $email
      * @param string $newPassword
      * @param string $name
      * @param RoleDto[] $roles

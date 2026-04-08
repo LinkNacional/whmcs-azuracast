@@ -35,6 +35,106 @@
         top: 0;
     }
 
+    .azuracast-hero-grid {
+        align-items: end;
+        display: grid;
+        gap: 24px;
+        grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.9fr);
+    }
+
+    .azuracast-hero-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 18px;
+    }
+
+    .azuracast-meta-chip {
+        background: rgba(255, 255, 255, 0.84);
+        border: 1px solid rgba(15, 118, 110, 0.12);
+        border-radius: 999px;
+        color: var(--az-ink);
+        font-size: 12px;
+        font-weight: 700;
+        padding: 9px 12px;
+    }
+
+    .azuracast-sidecar {
+        background: linear-gradient(160deg, #12333b, #1e6161);
+        border-radius: 22px;
+        color: #f7ffff;
+        min-height: 100%;
+        overflow: hidden;
+        padding: 22px;
+        position: relative;
+    }
+
+    .azuracast-sidecar:after {
+        background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.22), transparent 40%);
+        content: "";
+        inset: 0;
+        position: absolute;
+        pointer-events: none;
+    }
+
+    .azuracast-sidecar-label {
+        color: rgba(247, 255, 255, 0.72);
+        display: block;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+    }
+
+    .azuracast-sidecar-value {
+        display: block;
+        font-size: 30px;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        line-height: 1.05;
+        margin-top: 8px;
+    }
+
+    .azuracast-sidecar-copy {
+        color: rgba(247, 255, 255, 0.74);
+        font-size: 14px;
+        line-height: 1.6;
+        margin: 12px 0 0;
+        position: relative;
+        z-index: 1;
+    }
+
+    .azuracast-signal {
+        align-items: end;
+        display: flex;
+        gap: 8px;
+        height: 54px;
+        margin-top: 26px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .azuracast-signal span {
+        animation: azuracastSignal 1.4s ease-in-out infinite;
+        background: linear-gradient(180deg, #8ff3de, #ffffff);
+        border-radius: 999px;
+        display: block;
+        flex: 1;
+        opacity: 0.95;
+    }
+
+    .azuracast-signal span:nth-child(1) { height: 28%; animation-delay: 0.1s; }
+    .azuracast-signal span:nth-child(2) { height: 72%; animation-delay: 0.3s; }
+    .azuracast-signal span:nth-child(3) { height: 45%; animation-delay: 0.15s; }
+    .azuracast-signal span:nth-child(4) { height: 88%; animation-delay: 0.45s; }
+    .azuracast-signal span:nth-child(5) { height: 55%; animation-delay: 0.25s; }
+    .azuracast-signal span:nth-child(6) { height: 96%; animation-delay: 0.4s; }
+
+    @keyframes azuracastSignal {
+        0%, 100% { transform: scaleY(0.78); }
+        50% { transform: scaleY(1); }
+    }
+
     .azuracast-status-pill {
         border-radius: 999px;
         display: inline-block;
@@ -175,19 +275,37 @@
     }
 
     .azuracast-shortcuts {
-        display: flex;
-        flex-wrap: wrap;
+        display: grid;
         gap: 10px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .azuracast-shortcut {
-        border-radius: 999px;
-        display: inline-block;
+        border: 1px solid var(--az-border);
+        border-radius: 18px;
+        display: block;
         font-size: 13px;
         font-weight: 700;
-        padding: 11px 16px;
+        min-height: 92px;
+        padding: 16px 18px;
         text-decoration: none !important;
         transition: transform 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    .azuracast-shortcut-label {
+        display: block;
+        font-size: 15px;
+        line-height: 1.3;
+    }
+
+    .azuracast-shortcut-meta {
+        display: block;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        margin-top: 16px;
+        opacity: 0.72;
+        text-transform: uppercase;
     }
 
     .azuracast-shortcut:hover,
@@ -197,12 +315,13 @@
     }
 
     .azuracast-shortcut.is-primary {
-        background: var(--az-accent);
+        background: linear-gradient(135deg, var(--az-accent), #14b8a6);
+        border-color: transparent;
         color: #ffffff !important;
     }
 
     .azuracast-shortcut.is-secondary {
-        background: var(--az-accent-soft);
+        background: linear-gradient(180deg, #ffffff, var(--az-accent-soft));
         color: var(--az-accent) !important;
     }
 
@@ -253,6 +372,21 @@
         color: #f4ffff;
         min-height: 220px;
         padding: 20px;
+    }
+
+    .azuracast-stream-actions {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        margin-top: 16px;
+    }
+
+    .azuracast-stream-tile {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 14px;
+        min-height: 86px;
+        padding: 14px;
     }
 
     .azuracast-stream-label {
@@ -321,6 +455,12 @@
     }
 
     @media (max-width: 991px) {
+        .azuracast-hero-grid,
+        .azuracast-shortcuts,
+        .azuracast-stream-actions {
+            grid-template-columns: 1fr;
+        }
+
         .azuracast-card-grid {
             grid-template-columns: 1fr;
         }
@@ -333,19 +473,51 @@
 
 <div class="azuracast-dashboard">
     <div class="azuracast-hero">
-        <span class="azuracast-status-pill is-{$dashboard.statusVariant|escape:'html'}">{$dashboard.statusText|escape:'html'}</span>
-        <h1 class="azuracast-heading">{$dashboard.stationName|escape:'html'}</h1>
-        <p class="azuracast-subheading">
-            {if $dashboard.description}
-                {$dashboard.description|escape:'html'}
-            {else}
-                Station overview for {$dashboard.shortName|escape:'html'}.
-            {/if}
-        </p>
+        <div class="azuracast-hero-grid">
+            <div>
+                <span class="azuracast-status-pill is-{$dashboard.statusVariant|escape:'html'}">{$dashboard.statusText|escape:'html'}</span>
+                <h1 class="azuracast-heading">{$dashboard.stationName|escape:'html'}</h1>
+                <p class="azuracast-subheading">
+                    {if $dashboard.description}
+                        {$dashboard.description|escape:'html'}
+                    {else}
+                        Station overview for {$dashboard.shortName|escape:'html'}.
+                    {/if}
+                </p>
 
-        {if $dashboard.warning}
-            <div class="azuracast-warning">{$dashboard.warning|escape:'html'}</div>
-        {/if}
+                <div class="azuracast-hero-meta">
+                    <span class="azuracast-meta-chip">Short code: {$dashboard.shortName|escape:'html'}</span>
+                    <span class="azuracast-meta-chip">Listeners: {$dashboard.listeners|escape:'html'}</span>
+                    <span class="azuracast-meta-chip">Live DJ: {if $dashboard.hasLiveBroadcast}Connected{else}Idle{/if}</span>
+                </div>
+
+                {if $dashboard.warning}
+                    <div class="azuracast-warning">{$dashboard.warning|escape:'html'}</div>
+                {/if}
+            </div>
+
+            <div class="azuracast-sidecar">
+                <span class="azuracast-sidecar-label">Broadcast Snapshot</span>
+                <span class="azuracast-sidecar-value">{if $dashboard.hasLiveBroadcast && $dashboard.liveStreamerName}{$dashboard.liveStreamerName|escape:'html'}{elseif $dashboard.upcomingShow}{$dashboard.upcomingShow|escape:'html'}{else}AutoDJ Standby{/if}</span>
+                <p class="azuracast-sidecar-copy">
+                    {if $dashboard.hasLiveBroadcast && $dashboard.liveStreamerName}
+                        The live feed is currently being driven by {$dashboard.liveStreamerName|escape:'html'}.
+                    {elseif $dashboard.upcomingShow}
+                        Next scheduled content: {$dashboard.upcomingShow|escape:'html'}.
+                    {else}
+                        The station is ready and waiting for fresh live metadata.
+                    {/if}
+                </p>
+                <div class="azuracast-signal" aria-hidden="true">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="row">
@@ -400,7 +572,8 @@
                             href="{$shortcut.url|escape:'html'}"
                             {if $shortcut.external}target="_blank" rel="noopener noreferrer"{/if}
                         >
-                            {$shortcut.label|escape:'html'}
+                            <span class="azuracast-shortcut-label">{$shortcut.label|escape:'html'}</span>
+                            <span class="azuracast-shortcut-meta">{if $shortcut.external}Open external page{else}Open secure session{/if}</span>
                         </a>
                     {/foreach}
                 </div>
@@ -451,6 +624,17 @@
                         {else}
                             <span class="azuracast-stream-value">Player unavailable until AzuraCast exposes a listen URL.</span>
                         {/if}
+                    </div>
+
+                    <div class="azuracast-stream-actions">
+                        <div class="azuracast-stream-tile">
+                            <span class="azuracast-stream-label">Current Source</span>
+                            <span class="azuracast-stream-value">{if $dashboard.hasLiveBroadcast}Live DJ{else}AutoDJ{/if}</span>
+                        </div>
+                        <div class="azuracast-stream-tile">
+                            <span class="azuracast-stream-label">Status</span>
+                            <span class="azuracast-stream-value">{$dashboard.statusText|escape:'html'}</span>
+                        </div>
                     </div>
                 </div>
             </div>
