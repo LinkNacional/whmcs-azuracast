@@ -1,4 +1,8 @@
 <style>
+    #domain > .row,
+    #domain > br {
+        display: none !important;
+    }
     .azuracast-dashboard {
         --az-accent: #0f766e;
         --az-accent-soft: #dff7f1;
@@ -234,6 +238,33 @@
         letter-spacing: -0.03em;
         line-height: 1.1;
         margin: 18px 0 8px;
+        overflow-wrap: anywhere;
+    }
+
+    .azuracast-track-title.is-empty {
+        font-size: 22px;
+        line-height: 1.2;
+    }
+
+    .azuracast-onair-grid {
+        align-items: flex-start;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .azuracast-onair-artwork,
+    .azuracast-onair-details {
+        text-align: left !important;
+    }
+
+    .azuracast-onair-details {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+    }
+
+    .azuracast-onair-details .azuracast-track-title {
+        margin-top: 0;
     }
 
     .azuracast-track-meta,
@@ -249,12 +280,45 @@
         margin: 0;
     }
 
+    .azuracast-kpi-grid {
+        display: grid;
+        gap: 16px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        margin-top: 16px;
+    }
+
+    .azuracast-kpi {
+        height: 100%;
+        margin-top: 0;
+    }
+
+    @media (max-width: 575px) {
+        .azuracast-kpi-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
     .azuracast-kpi {
         background: var(--az-surface-alt);
         border: 1px solid var(--az-border);
         border-radius: 16px;
         margin-top: 16px;
         padding: 14px 16px;
+    }
+
+    .azuracast-onair-metrics {
+        display: grid;
+        gap: 16px;
+        grid-template-columns: minmax(0, 1.8fr) minmax(140px, 0.8fr);
+        margin-top: 16px;
+    }
+
+    .azuracast-onair-metrics .azuracast-kpi {
+        margin-top: 0;
+    }
+
+    .azuracast-onair-metrics .azuracast-kpi-value {
+        overflow-wrap: anywhere;
     }
 
     .azuracast-kpi-label,
@@ -468,11 +532,23 @@
         .azuracast-heading {
             font-size: 28px;
         }
+
+        .azuracast-onair-artwork {
+            margin-bottom: 16px;
+        }
+
+        .azuracast-onair-details .azuracast-track-title {
+            margin-top: 4px;
+        }
+
+        .azuracast-onair-metrics {
+            grid-template-columns: 1fr;
+        }
     }
 </style>
 
 <div class="azuracast-dashboard">
-    <div class="azuracast-hero">
+    <!-- div class="azuracast-hero">
         <div class="azuracast-hero-grid">
             <div>
                 <span class="azuracast-status-pill is-{$dashboard.statusVariant|escape:'html'}">{$dashboard.statusText|escape:'html'}</span>
@@ -518,22 +594,22 @@
                 </div>
             </div>
         </div>
-    </div>
+    </div -->
 
     <div class="row">
         <div class="col-lg-7">
             <div class="azuracast-panel">
                 <h2 class="azuracast-panel-title">{$i18n.onTheAir|escape:'html'}</h2>
-                <div class="row">
-                    <div class="col-sm-5">
+                <div class="row azuracast-onair-grid">
+                    <div class="col-sm-5 azuracast-onair-artwork">
                         {if $dashboard.artworkUrl}
                             <img class="azuracast-artwork" src="{$dashboard.artworkUrl|escape:'html'}" alt="{$i18n.albumArt|escape:'html'}">
                         {else}
                             <div class="azuracast-artwork-placeholder">{$i18n.noArtwork|escape:'html'}</div>
                         {/if}
                     </div>
-                    <div class="col-sm-7">
-                        <div class="azuracast-track-title">{$dashboard.currentTrackTitle|escape:'html'}</div>
+                    <div class="col-sm-7 azuracast-onair-details">
+                        <div class="azuracast-track-title{if $dashboard.currentTrackTitle == $i18n.noTrackPlaying} is-empty{/if}">{$dashboard.currentTrackTitle|escape:'html'}</div>
                         <p class="azuracast-track-meta">{$dashboard.currentTrackArtist|escape:'html'}</p>
                         <p class="azuracast-copy">
                             {if $dashboard.hasLiveBroadcast && $dashboard.liveStreamerName}
@@ -544,21 +620,16 @@
                                 {$i18n.liveMetadataSoon|escape:'html'}
                             {/if}
                         </p>
-
-                        <div class="row">
-                            <div class="col-xs-6">
-                                <div class="azuracast-kpi">
-                                    <span class="azuracast-kpi-label">{$i18n.kpiListeners|escape:'html'}</span>
-                                    <span class="azuracast-kpi-value">{$dashboard.listeners|escape:'html'}</span>
-                                </div>
-                            </div>
-                            <div class="col-xs-6">
-                                <div class="azuracast-kpi">
-                                    <span class="azuracast-kpi-label">{$i18n.stationCode|escape:'html'}</span>
-                                    <span class="azuracast-kpi-value">{$dashboard.shortName|escape:'html'}</span>
-                                </div>
-                            </div>
-                        </div>
+                    </div>
+                </div>
+                <div class="azuracast-onair-metrics">
+                    <div class="azuracast-kpi">
+                        <span class="azuracast-kpi-label">{$i18n.stationCode|escape:'html'}</span>
+                        <span class="azuracast-kpi-value">{$dashboard.shortName|escape:'html'}</span>
+                    </div>
+                    <div class="azuracast-kpi">
+                        <span class="azuracast-kpi-label">{$i18n.kpiListeners|escape:'html'}</span>
+                        <span class="azuracast-kpi-value">{$dashboard.listeners|escape:'html'}</span>
                     </div>
                 </div>
             </div>
