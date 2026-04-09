@@ -42,4 +42,30 @@ $_LANG = [
     'azuracast.clientarea.free' => 'livre',
     'azuracast.clientarea.quotaMetricsUnavailable' => 'As metricas de cota nao estao disponiveis na API no momento.',
     'azuracast.clientarea.packageInformation' => 'Informacoes do pacote',
+    // Dashboard state
+    'azuracast.clientarea.notProvisioned' => 'Este servico ainda nao foi provisionado.',
+    'azuracast.clientarea.statusUnavailable' => 'Indisponivel',
+    'azuracast.clientarea.noTrackPlaying' => 'Nenhuma faixa esta sendo reproduzida no momento.',
+    'azuracast.clientarea.liveDataUnavailable' => 'Os dados ao vivo ainda nao estao disponiveis.',
+    'azuracast.clientarea.stationDataUnavailable' => 'Os dados da estacao ao vivo estao temporariamente indisponiveis. As informacoes do pacote ainda sao exibidas abaixo.',
+    // Station status
+    'azuracast.clientarea.statusOnAir' => 'No ar',
+    'azuracast.clientarea.statusPartial' => 'Parcialmente online',
+    'azuracast.clientarea.statusOffline' => 'Offline',
+    // Shortcut labels
+    'azuracast.clientarea.shortcutLoginAzuraCast' => 'Entrar no AzuraCast',
+    'azuracast.clientarea.shortcutPublicPage' => 'Pagina publica',
+    'azuracast.clientarea.shortcutListenLive' => 'Ouvir ao vivo',
+    'azuracast.clientarea.shortcutPublicSchedule' => 'Programacao publica',
+    // Service card labels/values/meta
+    'azuracast.clientarea.cardBroadcasting' => 'Transmissao',
+    'azuracast.clientarea.cardAutoDj' => 'AutoDJ',
+    'azuracast.clientarea.cardRunning' => 'Ativo',
+    'azuracast.clientarea.cardStopped' => 'Parado',
+    'azuracast.clientarea.cardServiceOk' => 'Servico respondendo normalmente',
+    'azuracast.clientarea.cardServiceDown' => 'Servico nao esta em execucao no momento',
+    'azuracast.clientarea.cardLabelListeners' => 'Ouvintes',
+    'azuracast.clientarea.cardMetaListeners' => 'Ouvintes simultaneos atuais',
+    'azuracast.clientarea.cardLabelLiveDj' => 'DJ ao vivo',
+    'azuracast.clientarea.cardMetaNoStreamer' => 'Nenhum streamer ao vivo conectado',
 ];

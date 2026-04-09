@@ -42,4 +42,30 @@ $_LANG = [
     'azuracast.clientarea.free' => 'free',
     'azuracast.clientarea.quotaMetricsUnavailable' => 'Quota metrics are not available from the API right now.',
     'azuracast.clientarea.packageInformation' => 'Package Information',
+    // Dashboard state
+    'azuracast.clientarea.notProvisioned' => 'This service has not been provisioned yet.',
+    'azuracast.clientarea.statusUnavailable' => 'Unavailable',
+    'azuracast.clientarea.noTrackPlaying' => 'No track is currently playing.',
+    'azuracast.clientarea.liveDataUnavailable' => 'Live data is not available yet.',
+    'azuracast.clientarea.stationDataUnavailable' => 'Live station data is temporarily unavailable. Package information is still shown below.',
+    // Station status
+    'azuracast.clientarea.statusOnAir' => 'On the air',
+    'azuracast.clientarea.statusPartial' => 'Partially online',
+    'azuracast.clientarea.statusOffline' => 'Offline',
+    // Shortcut labels
+    'azuracast.clientarea.shortcutLoginAzuraCast' => 'Login To AzuraCast',
+    'azuracast.clientarea.shortcutPublicPage' => 'Public Page',
+    'azuracast.clientarea.shortcutListenLive' => 'Listen Live',
+    'azuracast.clientarea.shortcutPublicSchedule' => 'Public Schedule',
+    // Service card labels/values/meta
+    'azuracast.clientarea.cardBroadcasting' => 'Broadcasting',
+    'azuracast.clientarea.cardAutoDj' => 'AutoDJ',
+    'azuracast.clientarea.cardRunning' => 'Running',
+    'azuracast.clientarea.cardStopped' => 'Stopped',
+    'azuracast.clientarea.cardServiceOk' => 'Service is responding normally',
+    'azuracast.clientarea.cardServiceDown' => 'Service is not currently running',
+    'azuracast.clientarea.cardLabelListeners' => 'Listeners',
+    'azuracast.clientarea.cardMetaListeners' => 'Current concurrent listeners',
+    'azuracast.clientarea.cardLabelLiveDj' => 'Live DJ',
+    'azuracast.clientarea.cardMetaNoStreamer' => 'No live streamer connected',
 ];

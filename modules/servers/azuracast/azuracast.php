@@ -568,7 +568,7 @@ function azuracast_ClientArea($params)
         'Server Type' => $service->getServerType(),
     ];
 
-    $dashboard = azuracast_GetClientAreaDashboardData($params, $service);
+    $dashboard = azuracast_GetClientAreaDashboardData($params, $service, $i18n);
     
     return array(
         'templatefile' => 'clientarea',
@@ -625,6 +625,32 @@ function azuracast_GetClientAreaTranslations(array $params): array
         'free' => 'free',
         'quotaMetricsUnavailable' => 'Quota metrics are not available from the API right now.',
         'packageInformation' => 'Package Information',
+        // Dashboard state defaults
+        'notProvisioned' => 'This service has not been provisioned yet.',
+        'statusUnavailable' => 'Unavailable',
+        'noTrackPlaying' => 'No track is currently playing.',
+        'liveDataUnavailable' => 'Live data is not available yet.',
+        'stationDataUnavailable' => 'Live station data is temporarily unavailable. Package information is still shown below.',
+        // Station status
+        'statusOnAir' => 'On the air',
+        'statusPartial' => 'Partially online',
+        'statusOffline' => 'Offline',
+        // Shortcut labels
+        'shortcutLoginAzuraCast' => 'Login To AzuraCast',
+        'shortcutPublicPage' => 'Public Page',
+        'shortcutListenLive' => 'Listen Live',
+        'shortcutPublicSchedule' => 'Public Schedule',
+        // Service card labels/values/meta
+        'cardBroadcasting' => 'Broadcasting',
+        'cardAutoDj' => 'AutoDJ',
+        'cardRunning' => 'Running',
+        'cardStopped' => 'Stopped',
+        'cardServiceOk' => 'Service is responding normally',
+        'cardServiceDown' => 'Service is not currently running',
+        'cardLabelListeners' => 'Listeners',
+        'cardMetaListeners' => 'Current concurrent listeners',
+        'cardLabelLiveDj' => 'Live DJ',
+        'cardMetaNoStreamer' => 'No live streamer connected',
     ];
 
     $moduleTranslations = azuracast_LoadModuleLanguageStrings($params);
@@ -679,11 +705,18 @@ function azuracast_GetTranslationValue(array $translations, string $key, string 
 
 function azuracast_GetActiveLanguage(array $params): string
 {
+    // Priority 1: active session language set by WHMCS language switcher
+    if (isset($_SESSION['Language']) && is_string($_SESSION['Language']) && '' !== trim($_SESSION['Language'])) {
+        return $_SESSION['Language'];
+    }
+
+    // Priority 2: language from the client's profile (passed in $params)
     $clientLanguage = azuracast_ArrayGet($params, ['clientsdetails', 'language']);
     if (is_string($clientLanguage) && '' !== trim($clientLanguage)) {
         return $clientLanguage;
     }
 
+    // Priority 3: system-wide default language
     global $CONFIG;
     if (is_array($CONFIG) && !empty($CONFIG['Language']) && is_string($CONFIG['Language'])) {
         return $CONFIG['Language'];
@@ -697,13 +730,79 @@ function azuracast_NormalizeLanguageCode(string $language): string
     $normalized = strtolower(str_replace('-', '_', trim($language)));
 
     $aliases = [
-        'english' => 'en',
-        'en_us' => 'en',
-        'en_gb' => 'en',
+        // English variants
+        'english'       => 'en',
+        'en_us'         => 'en',
+        'en_gb'         => 'en',
+        // Portuguese (Brazilian) — WHMCS folder name is 'portuguese-br'
         'portuguese_br' => 'pt_br',
-        'portuguese-br' => 'pt_br',
-        'pt' => 'pt_br',
-        'pt_br' => 'pt_br',
+        'portuguese_br' => 'pt_br',
+        'portugues_br'  => 'pt_br',
+        'pt'            => 'pt_br',
+        'pt_br'         => 'pt_br',
+        'portuguese'    => 'pt_br',
+        // Portuguese (Portugal)
+        'portuguese_pt' => 'pt',
+        'portugues_pt'  => 'pt',
+        // Spanish
+        'spanish'       => 'es',
+        'espanol'       => 'es',
+        // German
+        'german'        => 'de',
+        'deutsch'       => 'de',
+        // French
+        'french'        => 'fr',
+        'francais'      => 'fr',
+        // Italian
+        'italian'       => 'it',
+        'italiano'      => 'it',
+        // Dutch
+        'dutch'         => 'nl',
+        'nederlands'    => 'nl',
+        // Polish
+        'polish'        => 'pl',
+        // Turkish
+        'turkish'       => 'tr',
+        // Russian
+        'russian'       => 'ru',
+        // Chinese
+        'chinese'       => 'zh',
+        // Japanese
+        'japanese'      => 'ja',
+        // Korean
+        'korean'        => 'ko',
+        // Swedish
+        'swedish'       => 'sv',
+        // Norwegian
+        'norwegian'     => 'no',
+        // Czech
+        'czech'         => 'cs',
+        // Ukrainian
+        'ukrainian'     => 'uk',
+        // Croatian
+        'croatian'      => 'hr',
+        // Roman
+        'romanian'      => 'ro',
+        // Hungarian
+        'hungarian'     => 'hu',
+        // Greek
+        'greek'         => 'el',
+        // Catalan
+        'catalan'       => 'ca',
+        // Macedonian
+        'macedonian'    => 'mk',
+        // Estonian
+        'estonian'      => 'et',
+        // Danish
+        'danish'        => 'da',
+        // Persian / Farsi
+        'persian'       => 'fa',
+        // Arabic
+        'arabic'        => 'ar',
+        // Hebrew
+        'hebrew'        => 'he',
+        // Azerbaijani
+        'azerbaijani'   => 'az',
     ];
 
     if (isset($aliases[$normalized])) {
@@ -721,7 +820,7 @@ function azuracast_NormalizeLanguageCode(string $language): string
     return 'en';
 }
 
-function azuracast_GetClientAreaDashboardData(array $params, Service $service): array
+function azuracast_GetClientAreaDashboardData(array $params, Service $service, array $i18n): array
 {
     $stationId = $service->getStationId();
     $hasStation = null !== $stationId;
@@ -731,16 +830,16 @@ function azuracast_GetClientAreaDashboardData(array $params, Service $service): 
 
     $dashboard = [
         'available' => false,
-        'warning' => $hasStation ? null : 'This service has not been provisioned yet.',
+        'warning' => $hasStation ? null : $i18n['notProvisioned'],
         'stationName' => $service->getStationName(),
         'shortName' => $service->getStationShortName(),
         'description' => '',
-        'statusText' => 'Unavailable',
+        'statusText' => $i18n['statusUnavailable'],
         'statusVariant' => 'muted',
         'artworkUrl' => null,
         'listeners' => 0,
-        'currentTrackTitle' => 'No track is currently playing.',
-        'currentTrackArtist' => 'Live data is not available yet.',
+        'currentTrackTitle' => $i18n['noTrackPlaying'],
+        'currentTrackArtist' => $i18n['liveDataUnavailable'],
         'liveStreamerName' => null,
         'hasLiveBroadcast' => false,
         'upcomingShow' => null,
@@ -769,7 +868,7 @@ function azuracast_GetClientAreaDashboardData(array $params, Service $service): 
     $dashboard['available'] = null !== $stationDashboard || null !== $stationProfile || null !== $nowPlaying;
 
     if (!$dashboard['available']) {
-        $dashboard['warning'] = 'Live station data is temporarily unavailable. Package information is still shown below.';
+        $dashboard['warning'] = $i18n['stationDataUnavailable'];
     }
 
     $dashboard['stationName'] = azuracast_ArrayGet($stationDashboard, ['name'], azuracast_ArrayGet($stationProfile, ['station', 'name'], $dashboard['stationName']));
@@ -785,12 +884,12 @@ function azuracast_GetClientAreaDashboardData(array $params, Service $service): 
     $frontendRunning = (bool)azuracast_ArrayGet($stationProfile, ['services', 'frontendRunning'], false);
     $backendRunning = (bool)azuracast_ArrayGet($stationProfile, ['services', 'backendRunning'], false);
     if ($frontendRunning || $backendRunning) {
-        $dashboard['statusText'] = ($frontendRunning && $backendRunning) ? 'On the air' : 'Partially online';
+        $dashboard['statusText'] = ($frontendRunning && $backendRunning) ? $i18n['statusOnAir'] : $i18n['statusPartial'];
         $dashboard['statusVariant'] = ($frontendRunning && $backendRunning) ? 'live' : 'warning';
     }
 
     if (!$frontendRunning && !$backendRunning && null !== $stationProfile) {
-        $dashboard['statusText'] = 'Offline';
+        $dashboard['statusText'] = $i18n['statusOffline'];
         $dashboard['statusVariant'] = 'offline';
     }
 
@@ -812,7 +911,7 @@ function azuracast_GetClientAreaDashboardData(array $params, Service $service): 
 
     if (null !== $singleSignOnUrl) {
         $dashboard['shortcuts'][] = [
-            'label' => 'Login To AzuraCast',
+            'label' => $i18n['shortcutLoginAzuraCast'],
             'url' => $singleSignOnUrl,
             'external' => false,
             'accent' => 'primary',
@@ -821,7 +920,7 @@ function azuracast_GetClientAreaDashboardData(array $params, Service $service): 
 
     if (null !== $dashboard['publicPageUrl']) {
         $dashboard['shortcuts'][] = [
-            'label' => 'Public Page',
+            'label' => $i18n['shortcutPublicPage'],
             'url' => $dashboard['publicPageUrl'],
             'external' => true,
             'accent' => 'secondary',
@@ -830,7 +929,7 @@ function azuracast_GetClientAreaDashboardData(array $params, Service $service): 
 
     if (null !== $dashboard['streamUrl']) {
         $dashboard['shortcuts'][] = [
-            'label' => 'Listen Live',
+            'label' => $i18n['shortcutListenLive'],
             'url' => $dashboard['streamUrl'],
             'external' => true,
             'accent' => 'secondary',
@@ -839,7 +938,7 @@ function azuracast_GetClientAreaDashboardData(array $params, Service $service): 
 
     if (null !== $dashboard['scheduleUrl']) {
         $dashboard['shortcuts'][] = [
-            'label' => 'Public Schedule',
+            'label' => $i18n['shortcutPublicSchedule'],
             'url' => $dashboard['scheduleUrl'],
             'external' => true,
             'accent' => 'secondary',
@@ -847,19 +946,33 @@ function azuracast_GetClientAreaDashboardData(array $params, Service $service): 
     }
 
     $dashboard['serviceCards'] = [
-        azuracast_BuildServiceCard('Broadcasting', $frontendRunning),
-        azuracast_BuildServiceCard('AutoDJ', $backendRunning),
+        azuracast_BuildServiceCard(
+            $i18n['cardBroadcasting'],
+            $frontendRunning,
+            $i18n['cardRunning'],
+            $i18n['cardStopped'],
+            $i18n['cardServiceOk'],
+            $i18n['cardServiceDown']
+        ),
+        azuracast_BuildServiceCard(
+            $i18n['cardAutoDj'],
+            $backendRunning,
+            $i18n['cardRunning'],
+            $i18n['cardStopped'],
+            $i18n['cardServiceOk'],
+            $i18n['cardServiceDown']
+        ),
         [
-            'label' => 'Listeners',
+            'label' => $i18n['cardLabelListeners'],
             'value' => (string)$dashboard['listeners'],
             'variant' => $dashboard['listeners'] > 0 ? 'live' : 'muted',
-            'meta' => 'Current concurrent listeners',
+            'meta' => $i18n['cardMetaListeners'],
         ],
         [
-            'label' => 'Live DJ',
-            'value' => $dashboard['hasLiveBroadcast'] ? 'Connected' : 'Idle',
+            'label' => $i18n['cardLabelLiveDj'],
+            'value' => $dashboard['hasLiveBroadcast'] ? $i18n['connected'] : $i18n['idle'],
             'variant' => $dashboard['hasLiveBroadcast'] ? 'live' : 'muted',
-            'meta' => $dashboard['liveStreamerName'] ?: 'No live streamer connected',
+            'meta' => $dashboard['liveStreamerName'] ?: $i18n['cardMetaNoStreamer'],
         ],
     ];
 
@@ -974,13 +1087,13 @@ function azuracast_FindDefaultMount(array $mounts): ?array
     return null;
 }
 
-function azuracast_BuildServiceCard(string $label, bool $isRunning): array
+function azuracast_BuildServiceCard(string $label, bool $isRunning, string $runningValue, string $stoppedValue, string $runningMeta, string $stoppedMeta): array
 {
     return [
         'label' => $label,
-        'value' => $isRunning ? 'Running' : 'Stopped',
+        'value' => $isRunning ? $runningValue : $stoppedValue,
         'variant' => $isRunning ? 'live' : 'offline',
-        'meta' => $isRunning ? 'Service is responding normally' : 'Service is not currently running',
+        'meta' => $isRunning ? $runningMeta : $stoppedMeta,
     ];
 }
 
