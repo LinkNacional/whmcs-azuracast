@@ -554,6 +554,8 @@ function azuracast_AdminSingleSignOn(array $params)
 
 function azuracast_ClientArea($params)
 {
+    $i18n = azuracast_GetClientAreaTranslations($params);
+
     $service = new Service($params);
     $productConfigOptions = [
         'Maximum Bitrate' => $service->getMaxBitrate() . ' Kbps',
@@ -574,8 +576,149 @@ function azuracast_ClientArea($params)
             'params' => $params,
             'productConfigOptions' => $productConfigOptions,
             'dashboard' => $dashboard,
+            'i18n' => $i18n,
         ),
     );
+}
+
+function azuracast_GetClientAreaTranslations(array $params): array
+{
+    $defaults = [
+        'stationOverviewFor' => 'Station overview for',
+        'shortCode' => 'Short code:',
+        'listeners' => 'Listeners:',
+        'liveDj' => 'Live DJ:',
+        'connected' => 'Connected',
+        'idle' => 'Idle',
+        'broadcastSnapshot' => 'Broadcast Snapshot',
+        'autoDjStandby' => 'AutoDJ Standby',
+        'liveFeedDrivenBy' => 'The live feed is currently being driven by',
+        'nextScheduledContent' => 'Next scheduled content:',
+        'stationReadyMetadata' => 'The station is ready and waiting for fresh live metadata.',
+        'onTheAir' => 'On The Air',
+        'albumArt' => 'Album art',
+        'noArtwork' => 'No Artwork',
+        'liveDjConnected' => 'Live DJ connected:',
+        'upcomingShow' => 'Upcoming show:',
+        'liveMetadataSoon' => 'Live metadata will appear here as soon as AzuraCast reports it.',
+        'kpiListeners' => 'Listeners',
+        'stationCode' => 'Station Code',
+        'quickShortcuts' => 'Quick Shortcuts',
+        'openExternalPage' => 'Open external page',
+        'openSecureSession' => 'Open secure session',
+        'stationStatus' => 'Station Status',
+        'streamOnAir' => 'Stream On-Air',
+        'primaryStream' => 'Primary Stream',
+        'noPublicStreamUrl' => 'No public stream URL is currently available.',
+        'publicPage' => 'Public Page',
+        'openPublicStationPage' => 'Open public station page',
+        'noPublicPagePublished' => 'No public page published for this station.',
+        'streamPlayer' => 'Stream Player',
+        'audioElementUnsupported' => 'Your browser does not support the audio element.',
+        'playerUnavailable' => 'Player unavailable until AzuraCast exposes a listen URL.',
+        'currentSource' => 'Current Source',
+        'liveDjSource' => 'Live DJ',
+        'autoDjSource' => 'AutoDJ',
+        'status' => 'Status',
+        'storageUsage' => 'Storage Usage',
+        'usedOf' => 'Used of',
+        'free' => 'free',
+        'quotaMetricsUnavailable' => 'Quota metrics are not available from the API right now.',
+        'packageInformation' => 'Package Information',
+    ];
+
+    $moduleTranslations = azuracast_LoadModuleLanguageStrings($params);
+    $resolved = [];
+
+    foreach ($defaults as $key => $defaultValue) {
+        $resolved[$key] = azuracast_GetTranslationValue($moduleTranslations, 'azuracast.clientarea.' . $key, $defaultValue);
+    }
+
+    return $resolved;
+}
+
+function azuracast_LoadModuleLanguageStrings(array $params): array
+{
+    static $cache = [];
+
+    $languageCode = azuracast_NormalizeLanguageCode(azuracast_GetActiveLanguage($params));
+    if (isset($cache[$languageCode])) {
+        return $cache[$languageCode];
+    }
+
+    $langDir = __DIR__ . '/lang';
+    $fallback = azuracast_LoadModuleLanguageFile($langDir . '/en.php');
+
+    $active = [];
+    if ('en' !== $languageCode) {
+        $active = azuracast_LoadModuleLanguageFile($langDir . '/' . $languageCode . '.php');
+    }
+
+    $cache[$languageCode] = array_merge($fallback, $active);
+
+    return $cache[$languageCode];
+}
+
+function azuracast_LoadModuleLanguageFile(string $filePath): array
+{
+    if (!is_file($filePath)) {
+        return [];
+    }
+
+    $_LANG = [];
+    include $filePath;
+
+    return is_array($_LANG) ? $_LANG : [];
+}
+
+function azuracast_GetTranslationValue(array $translations, string $key, string $default): string
+{
+    $value = $translations[$key] ?? $default;
+    return is_string($value) && '' !== trim($value) ? $value : $default;
+}
+
+function azuracast_GetActiveLanguage(array $params): string
+{
+    $clientLanguage = azuracast_ArrayGet($params, ['clientsdetails', 'language']);
+    if (is_string($clientLanguage) && '' !== trim($clientLanguage)) {
+        return $clientLanguage;
+    }
+
+    global $CONFIG;
+    if (is_array($CONFIG) && !empty($CONFIG['Language']) && is_string($CONFIG['Language'])) {
+        return $CONFIG['Language'];
+    }
+
+    return 'en';
+}
+
+function azuracast_NormalizeLanguageCode(string $language): string
+{
+    $normalized = strtolower(str_replace('-', '_', trim($language)));
+
+    $aliases = [
+        'english' => 'en',
+        'en_us' => 'en',
+        'en_gb' => 'en',
+        'portuguese_br' => 'pt_br',
+        'portuguese-br' => 'pt_br',
+        'pt' => 'pt_br',
+        'pt_br' => 'pt_br',
+    ];
+
+    if (isset($aliases[$normalized])) {
+        return $aliases[$normalized];
+    }
+
+    if (preg_match('/^[a-z]{2}$/', $normalized)) {
+        return $normalized;
+    }
+
+    if (preg_match('/^[a-z]{2}_[a-z]{2}$/', $normalized)) {
+        return $normalized;
+    }
+
+    return 'en';
 }
 
 function azuracast_GetClientAreaDashboardData(array $params, Service $service): array

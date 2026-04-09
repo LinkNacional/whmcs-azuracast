@@ -481,14 +481,14 @@
                     {if $dashboard.description}
                         {$dashboard.description|escape:'html'}
                     {else}
-                        Station overview for {$dashboard.shortName|escape:'html'}.
+                        {$i18n.stationOverviewFor|escape:'html'} {$dashboard.shortName|escape:'html'}.
                     {/if}
                 </p>
 
                 <div class="azuracast-hero-meta">
-                    <span class="azuracast-meta-chip">Short code: {$dashboard.shortName|escape:'html'}</span>
-                    <span class="azuracast-meta-chip">Listeners: {$dashboard.listeners|escape:'html'}</span>
-                    <span class="azuracast-meta-chip">Live DJ: {if $dashboard.hasLiveBroadcast}Connected{else}Idle{/if}</span>
+                    <span class="azuracast-meta-chip">{$i18n.shortCode|escape:'html'} {$dashboard.shortName|escape:'html'}</span>
+                    <span class="azuracast-meta-chip">{$i18n.listeners|escape:'html'} {$dashboard.listeners|escape:'html'}</span>
+                    <span class="azuracast-meta-chip">{$i18n.liveDj|escape:'html'} {if $dashboard.hasLiveBroadcast}{$i18n.connected|escape:'html'}{else}{$i18n.idle|escape:'html'}{/if}</span>
                 </div>
 
                 {if $dashboard.warning}
@@ -497,15 +497,15 @@
             </div>
 
             <div class="azuracast-sidecar">
-                <span class="azuracast-sidecar-label">Broadcast Snapshot</span>
-                <span class="azuracast-sidecar-value">{if $dashboard.hasLiveBroadcast && $dashboard.liveStreamerName}{$dashboard.liveStreamerName|escape:'html'}{elseif $dashboard.upcomingShow}{$dashboard.upcomingShow|escape:'html'}{else}AutoDJ Standby{/if}</span>
+                <span class="azuracast-sidecar-label">{$i18n.broadcastSnapshot|escape:'html'}</span>
+                <span class="azuracast-sidecar-value">{if $dashboard.hasLiveBroadcast && $dashboard.liveStreamerName}{$dashboard.liveStreamerName|escape:'html'}{elseif $dashboard.upcomingShow}{$dashboard.upcomingShow|escape:'html'}{else}{$i18n.autoDjStandby|escape:'html'}{/if}</span>
                 <p class="azuracast-sidecar-copy">
                     {if $dashboard.hasLiveBroadcast && $dashboard.liveStreamerName}
-                        The live feed is currently being driven by {$dashboard.liveStreamerName|escape:'html'}.
+                        {$i18n.liveFeedDrivenBy|escape:'html'} {$dashboard.liveStreamerName|escape:'html'}.
                     {elseif $dashboard.upcomingShow}
-                        Next scheduled content: {$dashboard.upcomingShow|escape:'html'}.
+                        {$i18n.nextScheduledContent|escape:'html'} {$dashboard.upcomingShow|escape:'html'}.
                     {else}
-                        The station is ready and waiting for fresh live metadata.
+                        {$i18n.stationReadyMetadata|escape:'html'}
                     {/if}
                 </p>
                 <div class="azuracast-signal" aria-hidden="true">
@@ -523,13 +523,13 @@
     <div class="row">
         <div class="col-lg-7">
             <div class="azuracast-panel">
-                <h2 class="azuracast-panel-title">On The Air</h2>
+                <h2 class="azuracast-panel-title">{$i18n.onTheAir|escape:'html'}</h2>
                 <div class="row">
                     <div class="col-sm-5">
                         {if $dashboard.artworkUrl}
-                            <img class="azuracast-artwork" src="{$dashboard.artworkUrl|escape:'html'}" alt="Album art for {$dashboard.currentTrackTitle|escape:'html'}">
+                            <img class="azuracast-artwork" src="{$dashboard.artworkUrl|escape:'html'}" alt="{$i18n.albumArt|escape:'html'}">
                         {else}
-                            <div class="azuracast-artwork-placeholder">No Artwork</div>
+                            <div class="azuracast-artwork-placeholder">{$i18n.noArtwork|escape:'html'}</div>
                         {/if}
                     </div>
                     <div class="col-sm-7">
@@ -537,24 +537,24 @@
                         <p class="azuracast-track-meta">{$dashboard.currentTrackArtist|escape:'html'}</p>
                         <p class="azuracast-copy">
                             {if $dashboard.hasLiveBroadcast && $dashboard.liveStreamerName}
-                                Live DJ connected: {$dashboard.liveStreamerName|escape:'html'}.
+                                {$i18n.liveDjConnected|escape:'html'} {$dashboard.liveStreamerName|escape:'html'}.
                             {elseif $dashboard.upcomingShow}
-                                Upcoming show: {$dashboard.upcomingShow|escape:'html'}.
+                                {$i18n.upcomingShow|escape:'html'} {$dashboard.upcomingShow|escape:'html'}.
                             {else}
-                                Live metadata will appear here as soon as AzuraCast reports it.
+                                {$i18n.liveMetadataSoon|escape:'html'}
                             {/if}
                         </p>
 
                         <div class="row">
                             <div class="col-xs-6">
                                 <div class="azuracast-kpi">
-                                    <span class="azuracast-kpi-label">Listeners</span>
+                                    <span class="azuracast-kpi-label">{$i18n.kpiListeners|escape:'html'}</span>
                                     <span class="azuracast-kpi-value">{$dashboard.listeners|escape:'html'}</span>
                                 </div>
                             </div>
                             <div class="col-xs-6">
                                 <div class="azuracast-kpi">
-                                    <span class="azuracast-kpi-label">Station Code</span>
+                                    <span class="azuracast-kpi-label">{$i18n.stationCode|escape:'html'}</span>
                                     <span class="azuracast-kpi-value">{$dashboard.shortName|escape:'html'}</span>
                                 </div>
                             </div>
@@ -564,7 +564,7 @@
             </div>
 
             <div class="azuracast-panel">
-                <h2 class="azuracast-panel-title">Quick Shortcuts</h2>
+                <h2 class="azuracast-panel-title">{$i18n.quickShortcuts|escape:'html'}</h2>
                 <div class="azuracast-shortcuts">
                     {foreach from=$dashboard.shortcuts item=shortcut}
                         <a
@@ -573,14 +573,14 @@
                             {if $shortcut.external}target="_blank" rel="noopener noreferrer"{/if}
                         >
                             <span class="azuracast-shortcut-label">{$shortcut.label|escape:'html'}</span>
-                            <span class="azuracast-shortcut-meta">{if $shortcut.external}Open external page{else}Open secure session{/if}</span>
+                            <span class="azuracast-shortcut-meta">{if $shortcut.external}{$i18n.openExternalPage|escape:'html'}{else}{$i18n.openSecureSession|escape:'html'}{/if}</span>
                         </a>
                     {/foreach}
                 </div>
             </div>
 
             <div class="azuracast-panel">
-                <h2 class="azuracast-panel-title">Station Status</h2>
+                <h2 class="azuracast-panel-title">{$i18n.stationStatus|escape:'html'}</h2>
                 <div class="azuracast-card-grid">
                     {foreach from=$dashboard.serviceCards item=card}
                         <div class="azuracast-card">
@@ -595,44 +595,44 @@
 
         <div class="col-lg-5">
             <div class="azuracast-panel">
-                <h2 class="azuracast-panel-title">Stream On-Air</h2>
+                <h2 class="azuracast-panel-title">{$i18n.streamOnAir|escape:'html'}</h2>
                 <div class="azuracast-stream-box">
                     <div>
-                        <span class="azuracast-stream-label">Primary Stream</span>
+                        <span class="azuracast-stream-label">{$i18n.primaryStream|escape:'html'}</span>
                         {if $dashboard.streamUrl}
                             <a class="azuracast-stream-value azuracast-stream-link" href="{$dashboard.streamUrl|escape:'html'}" target="_blank" rel="noopener noreferrer">{$dashboard.streamUrl|escape:'html'}</a>
                         {else}
-                            <span class="azuracast-stream-value">No public stream URL is currently available.</span>
+                            <span class="azuracast-stream-value">{$i18n.noPublicStreamUrl|escape:'html'}</span>
                         {/if}
                     </div>
 
                     <div style="margin-top:18px;">
-                        <span class="azuracast-stream-label">Public Page</span>
+                        <span class="azuracast-stream-label">{$i18n.publicPage|escape:'html'}</span>
                         {if $dashboard.publicPageUrl}
-                            <a class="azuracast-stream-value azuracast-stream-link" href="{$dashboard.publicPageUrl|escape:'html'}" target="_blank" rel="noopener noreferrer">Open public station page</a>
+                            <a class="azuracast-stream-value azuracast-stream-link" href="{$dashboard.publicPageUrl|escape:'html'}" target="_blank" rel="noopener noreferrer">{$i18n.openPublicStationPage|escape:'html'}</a>
                         {else}
-                            <span class="azuracast-stream-value">No public page published for this station.</span>
+                            <span class="azuracast-stream-value">{$i18n.noPublicPagePublished|escape:'html'}</span>
                         {/if}
                     </div>
 
                     <div style="margin-top:18px;">
-                        <span class="azuracast-stream-label">Stream Player</span>
+                        <span class="azuracast-stream-label">{$i18n.streamPlayer|escape:'html'}</span>
                         {if $dashboard.playerUrl}
                             <audio class="azuracast-player" controls preload="none" src="{$dashboard.playerUrl|escape:'html'}">
-                                Your browser does not support the audio element.
+                                {$i18n.audioElementUnsupported|escape:'html'}
                             </audio>
                         {else}
-                            <span class="azuracast-stream-value">Player unavailable until AzuraCast exposes a listen URL.</span>
+                            <span class="azuracast-stream-value">{$i18n.playerUnavailable|escape:'html'}</span>
                         {/if}
                     </div>
 
                     <div class="azuracast-stream-actions">
                         <div class="azuracast-stream-tile">
-                            <span class="azuracast-stream-label">Current Source</span>
-                            <span class="azuracast-stream-value">{if $dashboard.hasLiveBroadcast}Live DJ{else}AutoDJ{/if}</span>
+                            <span class="azuracast-stream-label">{$i18n.currentSource|escape:'html'}</span>
+                            <span class="azuracast-stream-value">{if $dashboard.hasLiveBroadcast}{$i18n.liveDjSource|escape:'html'}{else}{$i18n.autoDjSource|escape:'html'}{/if}</span>
                         </div>
                         <div class="azuracast-stream-tile">
-                            <span class="azuracast-stream-label">Status</span>
+                            <span class="azuracast-stream-label">{$i18n.status|escape:'html'}</span>
                             <span class="azuracast-stream-value">{$dashboard.statusText|escape:'html'}</span>
                         </div>
                     </div>
@@ -640,7 +640,7 @@
             </div>
 
             <div class="azuracast-panel">
-                <h2 class="azuracast-panel-title">Storage Usage</h2>
+                <h2 class="azuracast-panel-title">{$i18n.storageUsage|escape:'html'}</h2>
                 {if $dashboard.quotaCards}
                     {foreach from=$dashboard.quotaCards item=quota}
                         <div class="azuracast-card" style="min-height:0; margin-bottom:14px;">
@@ -648,12 +648,12 @@
                             <div class="azuracast-quota-copy">
                                 <div>
                                     <div class="azuracast-card-value" style="font-size:24px;">{$quota.used|escape:'html'}</div>
-                                    <p class="azuracast-mini-meta">Used of {$quota.quota|escape:'html'}</p>
+                                    <p class="azuracast-mini-meta">{$i18n.usedOf|escape:'html'} {$quota.quota|escape:'html'}</p>
                                 </div>
                                 <div class="text-right">
                                     <div class="azuracast-card-value" style="font-size:24px;">{$quota.usedPercent|escape:'html'}%</div>
                                     {if $quota.meta}
-                                        <p class="azuracast-mini-meta">{$quota.meta|escape:'html'} free</p>
+                                        <p class="azuracast-mini-meta">{$quota.meta|escape:'html'} {$i18n.free|escape:'html'}</p>
                                     {/if}
                                 </div>
                             </div>
@@ -663,12 +663,12 @@
                         </div>
                     {/foreach}
                 {else}
-                    <p class="azuracast-copy">Quota metrics are not available from the API right now.</p>
+                    <p class="azuracast-copy">{$i18n.quotaMetricsUnavailable|escape:'html'}</p>
                 {/if}
             </div>
 
             <div class="azuracast-panel">
-                <h2 class="azuracast-panel-title">Package Information</h2>
+                <h2 class="azuracast-panel-title">{$i18n.packageInformation|escape:'html'}</h2>
                 {foreach from=$productConfigOptions key=configName item=configValue}
                     <div class="azuracast-package-row">
                         <span class="azuracast-package-label">{$configName|escape:'html'}</span>
