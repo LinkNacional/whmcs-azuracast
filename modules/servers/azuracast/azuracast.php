@@ -190,6 +190,11 @@ function azuracast_CreateAccount(array $params)
 
         // All API calls succeeded — now atomically persist all IDs to the database
         $service->commitIds();
+        $model = $service->getModel();
+        if (empty($model->domain)) {
+            $model->domain = $service->getStationName();
+            $model->save();
+        }
 
     } catch (Exception $e) {
         // Compensating transactions: undo AzuraCast resources in reverse creation order.
@@ -825,7 +830,7 @@ function azuracast_GetClientAreaDashboardData(array $params, Service $service, a
     $stationId = $service->getStationId();
     $hasStation = null !== $stationId;
     $singleSignOnUrl = $hasStation
-        ? sprintf('/clientarea.php?action=productdetails&id=%d&dosinglesignon=1', (int)$params['id'])
+        ? sprintf('/clientarea.php?action=productdetails&id=%d&dosinglesignon=1', (int)$params['serviceid'])
         : null;
 
     $dashboard = [
