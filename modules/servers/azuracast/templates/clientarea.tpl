@@ -194,7 +194,7 @@
         border: 1px solid var(--az-border);
         border-radius: 20px;
         box-shadow: 0 14px 35px rgba(16, 31, 43, 0.05);
-        height: 100%;
+        /*height: 100%;*/
         margin-top: 24px;
         padding: 22px;
     }
