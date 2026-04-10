@@ -599,6 +599,25 @@
     <div class="row">
         <div class="col-lg-7">
             <div class="azuracast-panel">
+                <h2 class="azuracast-panel-title">{$i18n.quickShortcuts|escape:'html'}</h2>
+                <div class="azuracast-shortcuts">
+                    {foreach from=$dashboard.shortcuts item=shortcut}
+                        <a
+                            class="azuracast-shortcut is-{$shortcut.accent|escape:'html'}"
+                            href="{$shortcut.url|escape:'html'}"
+                            {if $shortcut.external}target="_blank" rel="noopener noreferrer"{/if}
+                        >
+                            <span class="azuracast-shortcut-label">{$shortcut.label|escape:'html'}</span>
+                            <span class="azuracast-shortcut-meta">{if $shortcut.external}{$i18n.openExternalPage|escape:'html'}{else}{$i18n.openSecureSession|escape:'html'}{/if}</span>
+                        </a>
+                    {/foreach}
+                    <a class="azuracast-shortcut is-secondary" href="https://translate.google.com/translate?sl=en&tl=pt&u=https://control.radio.owh.com.br/docs/" target="_blank" rel="noopener noreferrer">
+                            <span class="azuracast-shortcut-label">Documentação</span>
+                            <span class="azuracast-shortcut-meta">Abrir página externa</span>
+                        </a>
+                </div>
+            </div>
+            <div class="azuracast-panel">
                 <h2 class="azuracast-panel-title">{$i18n.onTheAir|escape:'html'}</h2>
                 <div class="row azuracast-onair-grid">
                     <div class="col-sm-5 azuracast-onair-artwork">
@@ -631,22 +650,6 @@
                         <span class="azuracast-kpi-label">{$i18n.kpiListeners|escape:'html'}</span>
                         <span class="azuracast-kpi-value">{$dashboard.listeners|escape:'html'}</span>
                     </div>
-                </div>
-            </div>
-
-            <div class="azuracast-panel">
-                <h2 class="azuracast-panel-title">{$i18n.quickShortcuts|escape:'html'}</h2>
-                <div class="azuracast-shortcuts">
-                    {foreach from=$dashboard.shortcuts item=shortcut}
-                        <a
-                            class="azuracast-shortcut is-{$shortcut.accent|escape:'html'}"
-                            href="{$shortcut.url|escape:'html'}"
-                            {if $shortcut.external}target="_blank" rel="noopener noreferrer"{/if}
-                        >
-                            <span class="azuracast-shortcut-label">{$shortcut.label|escape:'html'}</span>
-                            <span class="azuracast-shortcut-meta">{if $shortcut.external}{$i18n.openExternalPage|escape:'html'}{else}{$i18n.openSecureSession|escape:'html'}{/if}</span>
-                        </a>
-                    {/foreach}
                 </div>
             </div>
 
