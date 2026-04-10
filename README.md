@@ -138,7 +138,5 @@ The module exposes both buttons in WHMCS:
 
 ## License
 
-"Do whatever you want" license.
-
-Inside the `lib` folder there are modified files from the [official AzuraCast PHP SDK](https://github.com/AzuraCast/php-api-client), licensed under Apache-2.0.
+Inside the `lib` folder there are modified files from the [official AzuraCast PHP SDK](https://github.com/AzuraCast/php-api-client), licensed under GPL.
 
