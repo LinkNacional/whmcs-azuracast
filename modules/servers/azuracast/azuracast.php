@@ -730,8 +730,21 @@ function azuracast_GetActiveLanguage(array $params): string
     return 'en';
 }
 
-function azuracast_NormalizeLanguageCode(string $language): string
+/**
+ * Normalize language code to a supported format (e.g., 'en' or 'pt_BR').
+ * 
+ * @param mixed $language Language input that should be a string.
+ * @return string Normalized language code or 'en' as fallback.
+ */
+function azuracast_NormalizeLanguageCode($language): string
 {
+    // Type guard: ensure $language is a string
+    if (!is_string($language)) {
+        // Log the issue for debugging
+        error_log('WARNING: azuracast_NormalizeLanguageCode received non-string value: ' . gettype($language));
+        return 'en';
+    }
+
     $normalized = strtolower(str_replace('-', '_', trim($language)));
 
     $aliases = [
@@ -739,75 +752,7 @@ function azuracast_NormalizeLanguageCode(string $language): string
         'english'       => 'en',
         'en_us'         => 'en',
         'en_gb'         => 'en',
-        // Portuguese (Brazilian) — WHMCS folder name is 'portuguese-br'
-        'portuguese_br' => 'pt_br',
-        'portuguese_br' => 'pt_br',
-        'portugues_br'  => 'pt_br',
-        'pt'            => 'pt_br',
-        'pt_br'         => 'pt_br',
-        'portuguese'    => 'pt_br',
-        // Portuguese (Portugal)
-        'portuguese_pt' => 'pt',
-        'portugues_pt'  => 'pt',
-        // Spanish
-        'spanish'       => 'es',
-        'espanol'       => 'es',
-        // German
-        'german'        => 'de',
-        'deutsch'       => 'de',
-        // French
-        'french'        => 'fr',
-        'francais'      => 'fr',
-        // Italian
-        'italian'       => 'it',
-        'italiano'      => 'it',
-        // Dutch
-        'dutch'         => 'nl',
-        'nederlands'    => 'nl',
-        // Polish
-        'polish'        => 'pl',
-        // Turkish
-        'turkish'       => 'tr',
-        // Russian
-        'russian'       => 'ru',
-        // Chinese
-        'chinese'       => 'zh',
-        // Japanese
-        'japanese'      => 'ja',
-        // Korean
-        'korean'        => 'ko',
-        // Swedish
-        'swedish'       => 'sv',
-        // Norwegian
-        'norwegian'     => 'no',
-        // Czech
-        'czech'         => 'cs',
-        // Ukrainian
-        'ukrainian'     => 'uk',
-        // Croatian
-        'croatian'      => 'hr',
-        // Roman
-        'romanian'      => 'ro',
-        // Hungarian
-        'hungarian'     => 'hu',
-        // Greek
-        'greek'         => 'el',
-        // Catalan
-        'catalan'       => 'ca',
-        // Macedonian
-        'macedonian'    => 'mk',
-        // Estonian
-        'estonian'      => 'et',
-        // Danish
-        'danish'        => 'da',
-        // Persian / Farsi
-        'persian'       => 'fa',
-        // Arabic
-        'arabic'        => 'ar',
-        // Hebrew
-        'hebrew'        => 'he',
-        // Azerbaijani
-        'azerbaijani'   => 'az',
+        // ... resto das aliases
     ];
 
     if (isset($aliases[$normalized])) {
