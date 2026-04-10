@@ -596,6 +596,10 @@
         </div>
     </div -->
 
+    {if $dashboard.warning}
+        <div class="azuracast-warning">{$dashboard.warning|escape:'html'}</div>
+    {/if}
+
     <div class="row">
         <div class="col-lg-7">
             <div class="azuracast-panel">

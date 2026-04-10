@@ -407,9 +407,10 @@ function azuracast_ChangePackage(array $params)
     try {
         $service = new Service($params);
         $azuracast = azuracast_ApiClient($params);
+        $isServiceSuspended = azuracast_IsServiceSuspended($params, $service);
 
         // Update the station with the new service
-        $azuracast->admin()->stations()->update($service, true);
+        $azuracast->admin()->stations()->update($service, !$isServiceSuspended);
 
         // Modify Station's Storage Quota for each type
         $storage = $azuracast->admin()->storage()->update($service);
@@ -486,6 +487,19 @@ function azuracast_ServiceSingleSignOn(array $params)
     try {
 
         $service = new Service($params);
+        if (azuracast_IsServiceSuspended($params, $service)) {
+            logModuleCall(
+                'azuracast',
+                __FUNCTION__,
+                azuracast_SanitizeParams($params),
+                'SSO blocked because service status is Suspended',
+                ''
+            );
+
+            $return['error'] = azuracast_GetSuspendedTranslation($params, 'ssoUnavailableSuspended', 'Single Sign-On is unavailable while this service is suspended.');
+            return $return;
+        }
+
         $azuracast = azuracast_ApiClient($params);
         $loginUrl = $azuracast->admin()->users()->getLoginLink($service->getUserId());
         azuracast_ValidateSsoRedirectUrl($loginUrl, $params['serverhostname']);
@@ -636,10 +650,13 @@ function azuracast_GetClientAreaTranslations(array $params): array
         'noTrackPlaying' => 'No track is currently playing.',
         'liveDataUnavailable' => 'Live data is not available yet.',
         'stationDataUnavailable' => 'Live station data is temporarily unavailable. Package information is still shown below.',
+        'serviceSuspended' => 'This service is currently suspended. Access to the AzuraCast panel is blocked until reactivation.',
+        'ssoUnavailableSuspended' => 'Single Sign-On is unavailable while this service is suspended.',
         // Station status
         'statusOnAir' => 'On the air',
         'statusPartial' => 'Partially online',
         'statusOffline' => 'Offline',
+        'statusSuspended' => 'Suspended',
         // Shortcut labels
         'shortcutLoginAzuraCast' => 'Login To AzuraCast',
         'shortcutPublicPage' => 'Public Page',
@@ -774,6 +791,7 @@ function azuracast_GetClientAreaDashboardData(array $params, Service $service, a
 {
     $stationId = $service->getStationId();
     $hasStation = null !== $stationId;
+    $isServiceSuspended = azuracast_IsServiceSuspended($params, $service);
     $singleSignOnUrl = $hasStation
         ? sprintf('/clientarea.php?action=productdetails&id=%d&dosinglesignon=1', (int)$params['serviceid'])
         : null;
@@ -802,6 +820,12 @@ function azuracast_GetClientAreaDashboardData(array $params, Service $service, a
         'quotaCards' => [],
     ];
 
+    if ($isServiceSuspended) {
+        $dashboard['warning'] = $i18n['serviceSuspended'];
+        $dashboard['statusText'] = $i18n['statusSuspended'];
+        $dashboard['statusVariant'] = 'warning';
+    }
+
     if (!$hasStation) {
         return $dashboard;
     }
@@ -817,7 +841,7 @@ function azuracast_GetClientAreaDashboardData(array $params, Service $service, a
 
     $dashboard['available'] = null !== $stationDashboard || null !== $stationProfile || null !== $nowPlaying;
 
-    if (!$dashboard['available']) {
+    if (!$dashboard['available'] && !$isServiceSuspended) {
         $dashboard['warning'] = $i18n['stationDataUnavailable'];
     }
 
@@ -859,7 +883,7 @@ function azuracast_GetClientAreaDashboardData(array $params, Service $service, a
         $dashboard['upcomingShow'] = azuracast_ArrayGet($schedule[0], ['title'], azuracast_ArrayGet($schedule[0], ['name']));
     }
 
-    if (null !== $singleSignOnUrl) {
+    if (null !== $singleSignOnUrl && !$isServiceSuspended) {
         $dashboard['shortcuts'][] = [
             'label' => $i18n['shortcutLoginAzuraCast'],
             'url' => $singleSignOnUrl,
@@ -940,6 +964,38 @@ function azuracast_ApiClient($params) : Client
     $host = 'https://' . $params['serverhostname'];
     $apiKey = $params['serveraccesshash'];
     return Client::create($host, $apiKey);
+}
+
+/**
+ * Detect if the WHMCS service is currently suspended.
+ */
+function azuracast_IsServiceSuspended(array $params, ?Service $service = null): bool
+{
+    $model = $service ? $service->getModel() : ($params['model'] ?? null);
+
+    if (is_object($model) && isset($model->status) && is_string($model->status)) {
+        return strcasecmp($model->status, 'Suspended') === 0;
+    }
+
+    if (isset($params['status']) && is_string($params['status'])) {
+        return strcasecmp($params['status'], 'Suspended') === 0;
+    }
+
+    return false;
+}
+
+/**
+ * Resolve a translated message for suspended-service scenarios.
+ */
+function azuracast_GetSuspendedTranslation(array $params, string $translationKey, string $defaultValue): string
+{
+    $moduleTranslations = azuracast_LoadModuleLanguageStrings($params);
+
+    return azuracast_GetTranslationValue(
+        $moduleTranslations,
+        'azuracast.clientarea.' . $translationKey,
+        $defaultValue
+    );
 }
 
 /**

@@ -48,10 +48,13 @@ $_LANG = [
     'azuracast.clientarea.noTrackPlaying' => 'Nenhuma faixa está sendo reproduzida no momento.',
     'azuracast.clientarea.liveDataUnavailable' => 'Os dados ao vivo ainda não estão disponíveis.',
     'azuracast.clientarea.stationDataUnavailable' => 'Os dados da estação ao vivo estão temporariamente indisponíveis. As informações do pacote ainda são exibidas abaixo.',
+    'azuracast.clientarea.serviceSuspended' => 'Este serviço está suspenso no momento. O acesso ao painel AzuraCast permanece bloqueado até a reativação.',
+    'azuracast.clientarea.ssoUnavailableSuspended' => 'O acesso SSO não está disponível enquanto este serviço estiver suspenso.',
     // Station status
     'azuracast.clientarea.statusOnAir' => 'No ar',
     'azuracast.clientarea.statusPartial' => 'Parcialmente online',
     'azuracast.clientarea.statusOffline' => 'Offline',
+    'azuracast.clientarea.statusSuspended' => 'Suspenso',
     // Shortcut labels
     'azuracast.clientarea.shortcutLoginAzuraCast' => 'ENTRAR NO PAINEL',
     'azuracast.clientarea.shortcutPublicPage' => 'Página pública',
