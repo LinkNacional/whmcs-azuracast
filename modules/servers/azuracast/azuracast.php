@@ -843,14 +843,21 @@ function azuracast_NormalizeLanguageCode($language): string
         return 'en';
     }
 
-    $normalized = strtolower(str_replace('-', '_', trim($language)));
+    $normalized = strtolower(trim($language));
+    $normalized = str_replace(['-', ' '], '_', $normalized);
+    $normalized = preg_replace('/_+/', '_', $normalized) ?? 'en';
 
     $aliases = [
         // English variants
         'english'       => 'en',
         'en_us'         => 'en',
         'en_gb'         => 'en',
-        // ... resto das aliases
+        // Portuguese variants used by WHMCS/client profile labels
+        'portuguese'            => 'pt_br',
+        'portuguese_br'         => 'pt_br',
+        'brazilian_portuguese'  => 'pt_br',
+        'pt'                    => 'pt_br',
+        'pt_pt'                 => 'pt_br',
     ];
 
     if (isset($aliases[$normalized])) {
@@ -968,7 +975,7 @@ function azuracast_GetClientAreaDashboardData(array $params, Service $service, a
         $dashboard['shortcuts'][] = [
             'label' => $i18n['shortcutLoginAzuraCast'],
             'url' => $singleSignOnUrl,
-            'external' => false,
+            'external' => true,
             'accent' => 'primary',
         ];
     }
