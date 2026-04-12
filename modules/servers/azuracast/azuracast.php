@@ -271,10 +271,11 @@ function azuracast_CreateAccount(array $params)
         // All API calls succeeded — now atomically persist all IDs to the database
         $service->commitIds();
         $model = $service->getModel();
+        $model->username = $user->getEmail();
         if (empty($model->domain)) {
             $model->domain = $service->getStationName();
-            $model->save();
         }
+        $model->save();
 
     } catch (Exception $e) {
         // Compensating transactions: undo AzuraCast resources in reverse creation order.
