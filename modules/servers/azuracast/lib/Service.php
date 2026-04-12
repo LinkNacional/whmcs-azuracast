@@ -28,6 +28,7 @@ class Service
     private ?int $cloneSourceStationId;
     private ?string $userLocale;
     private ?bool $userShow24HourTime;
+    private array $stationPermissions;
     private Model $model;
     /**
      * Holds IDs staged during provisioning before they are persisted to serviceProperties.
@@ -55,6 +56,7 @@ class Service
         $this->cloneSourceStationId = (int)($params['configoption9'] ?? 0) ?: null;
         $this->userLocale = $this->parseUserLocale($params['configoption10'] ?? null);
         $this->userShow24HourTime = $this->parseUserShow24HourTime($params['configoption11'] ?? null);
+        $this->stationPermissions = $this->parseStationPermissions($params);
         $this->password = $params['password'];
         $this->model = $params['model'];
         $stationName = trim((string)($params['customfields']['Station Name'] ?? ''));
@@ -177,6 +179,46 @@ class Service
         'pl_PL', 'tr_TR', 'ru_RU', 'ja_JP', 'ko_KR', 'zh_CN',
         'cs_CZ', 'nb_NO', 'el_GR', 'sv_SE', 'uk_UA',
     ];
+
+    /**
+     * Maps configoption12–24 to their AzuraCast permission string.
+     * If no option is checked (e.g. product created before this feature existed),
+     * all permissions are granted to preserve backward-compatible behaviour.
+     */
+    private const STATION_PERMISSION_MAP = [
+        'configoption12' => 'view station management',
+        'configoption13' => 'view station reports',
+        'configoption14' => 'view station logs',
+        'configoption15' => 'manage station profile',
+        'configoption16' => 'manage station broadcasting',
+        'configoption17' => 'manage station streamers',
+        'configoption18' => 'manage station mounts',
+        'configoption19' => 'manage station remotes',
+        'configoption20' => 'manage station media',
+        'configoption21' => 'delete station media',
+        'configoption22' => 'manage station automation',
+        'configoption23' => 'manage station web hooks',
+        'configoption24' => 'manage station podcasts',
+    ];
+
+    private function parseStationPermissions(array $params): array
+    {
+        $selected = [];
+        foreach (self::STATION_PERMISSION_MAP as $option => $permission) {
+            if (($params[$option] ?? '') === 'on') {
+                $selected[] = $permission;
+            }
+        }
+
+        // Backward-compatible fallback: if none of the new configoptions are saved yet
+        // (product predates this feature), grant all permissions.
+        return $selected !== [] ? $selected : array_values(self::STATION_PERMISSION_MAP);
+    }
+
+    public function getStationPermissions(): array
+    {
+        return $this->stationPermissions;
+    }
 
     private function parseUserLocale(mixed $value): ?string
     {

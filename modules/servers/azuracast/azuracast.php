@@ -110,7 +110,87 @@ function azuracast_ConfigOptions()
             'Options' => ',12,24',
             'Description' => 'Optional. If empty, do not send show_24_hour_time and let AzuraCast use its default.',
             'Default' => '',
-        ]
+        ],
+        // Station permissions granted to the provisioned user role (configoptions 12–24).
+        // If NONE are checked, all permissions are granted (backward-compatible default).
+        'Permission: View Management' => [
+            'FriendlyName' => 'Permission: View Management',
+            'Type' => 'yesno',
+            'Description' => 'Allow user to access the station management page.',
+            'Default' => 'on',
+        ],
+        'Permission: View Reports' => [
+            'FriendlyName' => 'Permission: View Reports',
+            'Type' => 'yesno',
+            'Description' => 'Allow user to view station reports.',
+            'Default' => 'on',
+        ],
+        'Permission: View Logs' => [
+            'FriendlyName' => 'Permission: View Logs',
+            'Type' => 'yesno',
+            'Description' => 'Allow user to view station logs.',
+            'Default' => 'on',
+        ],
+        'Permission: Manage Profile' => [
+            'FriendlyName' => 'Permission: Manage Profile',
+            'Type' => 'yesno',
+            'Description' => 'Allow user to edit the station profile.',
+            'Default' => 'on',
+        ],
+        'Permission: Manage Broadcasting' => [
+            'FriendlyName' => 'Permission: Manage Broadcasting',
+            'Type' => 'yesno',
+            'Description' => 'Allow user to manage station broadcasting (AutoDJ, stream).',
+            'Default' => 'on',
+        ],
+        'Permission: Manage Streamers' => [
+            'FriendlyName' => 'Permission: Manage Streamers',
+            'Type' => 'yesno',
+            'Description' => 'Allow user to manage station streamers/DJs.',
+            'Default' => 'on',
+        ],
+        'Permission: Manage Mount Points' => [
+            'FriendlyName' => 'Permission: Manage Mount Points',
+            'Type' => 'yesno',
+            'Description' => 'Allow user to manage station mount points.',
+            'Default' => 'on',
+        ],
+        'Permission: Manage Remote Relays' => [
+            'FriendlyName' => 'Permission: Manage Remote Relays',
+            'Type' => 'yesno',
+            'Description' => 'Allow user to manage remote relay stations.',
+            'Default' => 'on',
+        ],
+        'Permission: Manage Media' => [
+            'FriendlyName' => 'Permission: Manage Media',
+            'Type' => 'yesno',
+            'Description' => 'Allow user to upload and manage station media files.',
+            'Default' => 'on',
+        ],
+        'Permission: Delete Media' => [
+            'FriendlyName' => 'Permission: Delete Media',
+            'Type' => 'yesno',
+            'Description' => 'Allow user to delete station media files.',
+            'Default' => 'on',
+        ],
+        'Permission: Manage Automation' => [
+            'FriendlyName' => 'Permission: Manage Automation',
+            'Type' => 'yesno',
+            'Description' => 'Allow user to manage station automation settings.',
+            'Default' => 'on',
+        ],
+        'Permission: Manage Webhooks' => [
+            'FriendlyName' => 'Permission: Manage Webhooks',
+            'Type' => 'yesno',
+            'Description' => 'Allow user to manage station web hooks.',
+            'Default' => 'on',
+        ],
+        'Permission: Manage Podcasts' => [
+            'FriendlyName' => 'Permission: Manage Podcasts',
+            'Type' => 'yesno',
+            'Description' => 'Allow user to manage station podcasts.',
+            'Default' => 'on',
+        ],
     );
 }
 
@@ -172,7 +252,7 @@ function azuracast_CreateAccount(array $params)
         $azuracast->admin()->storage()->update($service);
 
         // Create a role for this station
-        $role = $azuracast->admin()->roles()->create("Station {$station->getId()} Role", [], [$station->getId() => ["manage station automation", "manage station profile", "manage station broadcasting", "manage station media", "delete station media", "manage station mounts", "manage station podcasts", "manage station remotes", "manage station streamers", "manage station web hooks", "view station management", "view station reports", "view station logs"]]);
+        $role = $azuracast->admin()->roles()->create("Station {$station->getId()} Role", [], [$station->getId() => $service->getStationPermissions()]);
         $createdRoleId = $role->getId();
         $service->setRoleId($role->getId());
 
