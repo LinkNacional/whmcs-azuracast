@@ -104,6 +104,13 @@ function azuracast_ConfigOptions()
             'Description' => 'Optional. If empty, do not send locale and let AzuraCast use its default.',
             'Default' => '',
         ],
+        'User Theme' => [
+            'FriendlyName' => 'User DefaultTheme',
+            'Type' => 'dropdown',
+            'Options' => 'dark,light,browser',
+            'Description' => 'Choose the default theme mode as default.',
+            'Default' => 'dark',
+        ],
         'User Time Display' => [
             'FriendlyName' => 'User Time Display',
             'Type' => 'dropdown',
