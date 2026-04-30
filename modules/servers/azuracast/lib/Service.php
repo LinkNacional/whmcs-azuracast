@@ -45,6 +45,7 @@ class Service
         $this->mediaStorage = (int)($params['configoption4'] ?? 0);
         $this->recordingsStorage = (int)($params['configoption5'] ?? 0);
         $this->podcastsStorage = (int)($params['configoption6'] ?? 0);
+        $this->userTheme = trim((string)($params['configoption25'] ?? ''));
         $this->maxListeners = $params['configoption7'] ?? 0;
         // Allowlist: update this list if AzuraCast adds new frontend types in the future.
         $serverType = $params['configoption8'] ?? 'icecast';
