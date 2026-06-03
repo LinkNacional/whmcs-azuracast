@@ -615,7 +615,7 @@
                             <span class="azuracast-shortcut-meta">{if $shortcut.external}{$i18n.openExternalPage|escape:'html'}{else}{$i18n.openSecureSession|escape:'html'}{/if}</span>
                         </a>
                     {/foreach}
-                    <a class="azuracast-shortcut is-secondary" href="https://translate.google.com/translate?sl=en&tl=pt&u=https://control.radio.owh.com.br/docs/" target="_blank" rel="noopener noreferrer">
+                    <a class="azuracast-shortcut is-secondary" href="https://www.owh.radio.br/docs/painel-da-radio/manual-do-usuario/" target="_blank" rel="noopener noreferrer">
                             <span class="azuracast-shortcut-label">Documentação</span>
                             <span class="azuracast-shortcut-meta">Abrir página externa</span>
                         </a>
