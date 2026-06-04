@@ -9,17 +9,34 @@ add_hook('ClientAreaHeadOutput', 1, function (array $vars): string {
         return '';
     }
 
+    // Guard: only inject for services using the azuracast module
+    $serviceId = (int) ($_GET['id'] ?? 0);
+    if ($serviceId <= 0) {
+        return '';
+    }
+
+    try {
+        $serverType = \WHMCS\Database\Capsule::table('tblhosting')
+            ->join('tblproducts', 'tblhosting.packageid', '=', 'tblproducts.id')
+            ->where('tblhosting.id', $serviceId)
+            ->value('tblproducts.servertype');
+    } catch (\Throwable $e) {
+        return '';
+    }
+
+    if ($serverType !== 'azuracast') {
+        return '';
+    }
+
     return <<<'JS'
 <script>
 (function () {
     function injectEnterPanelButton() {
-        // Avoid double injection
         if (document.getElementById('az-enter-panel-btn')) return;
 
         var upgradeBtn = document.querySelector('.btn-warning[href*="upgrade.php"]');
         if (!upgradeBtn) return;
 
-        // Extract the service ID from the current page URL
         var urlParams = new URLSearchParams(window.location.search);
         var serviceId = urlParams.get('id');
         if (!serviceId) return;
